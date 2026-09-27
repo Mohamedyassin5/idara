@@ -5,6 +5,7 @@ Database URL
 Build database connection URL from environment variables.
 """
 
+import re
 from os import getenv
 from urllib.parse import quote
 
@@ -16,11 +17,13 @@ def build_db_url() -> str:
     """
     url = getenv("DATABASE_URL")
     if url:
-        # Neon/Heroku style "postgres://" or "postgresql://" -> SQLAlchemy psycopg driver
-        for prefix in ("postgres://", "postgresql://"):
-            if url.startswith(prefix):
-                return "postgresql+psycopg://" + url[len(prefix):]
-        return url
+        # Tolerate copy/paste noise: quotes, spaces, newlines or a "psql '...'" prefix (Neon's Connect box)
+        match = re.search(r"postgres(?:ql)?://[^\s'\"]+", url)
+        if match:
+            url = match.group(0)
+            # Neon/Heroku style "postgres://" or "postgresql://" -> SQLAlchemy psycopg driver
+            return "postgresql+psycopg://" + url.split("://", 1)[1]
+        return url.strip()
 
     driver = getenv("DB_DRIVER", "postgresql+psycopg")
     user = getenv("DB_USER", "ai")
