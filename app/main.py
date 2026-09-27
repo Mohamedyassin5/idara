@@ -58,18 +58,14 @@ if SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET:
     )
 
 
-# ---------------------------------------------------------------------------
-# Lifespan — extension hook for app-level startup / teardown.
-#
-# AgentOS handles the MCP lifecycle (connect on startup, close on shutdown).
-# Keep this hook in place so you can plug in your own setup as needed.
-# ---------------------------------------------------------------------------
-@asynccontextmanager
-async def lifespan(app):  # type: ignore[no-untyped-def]
-    log_info("AgentOS lifespan: startup")
-    # Index the knowledge bases before serving. No-op (no Voyage call) when every section is
-    # already in tmp/lancedb. Runs in a thread because indexing is blocking I/O; 21s pacing keeps
-    # a first-time indexing under the Voyage free tier's 3 requests/minute.
+async def index_knowledge() -> None:
+    """Index the knowledge bases (no-op for sections already indexed).
+
+    Runs in the background: with Voyage's free-tier pacing (21s between embeddings) a first
+    indexing can take many minutes, and the server must accept requests (and pass the hosting
+    platform's startup health check) long before that. Each loader runs in a thread because
+    indexing is blocking I/O.
+    """
     knowledge_loaders = [
         ("Bureaucratie", load_bureaucratie_knowledge),
         ("STEG", load_steg_knowledge),
@@ -83,13 +79,30 @@ async def lifespan(app):  # type: ignore[no-untyped-def]
     ]
     embedded = 0
     for label, load_knowledge in knowledge_loaders:
-        if embedded:
-            await asyncio.sleep(21)  # pacing is per loader; keep it across loaders too
-        embedded = await asyncio.to_thread(load_knowledge, 21)
-        log_info(f"{label} knowledge base ready ({embedded} section(s) indexed at startup)")
+        try:
+            if embedded:
+                await asyncio.sleep(21)  # pacing is per loader; keep it across loaders too
+            embedded = await asyncio.to_thread(load_knowledge, 21)
+            log_info(f"{label} knowledge base ready ({embedded} section(s) indexed)")
+        except Exception as exc:  # one failing knowledge base must not stop the others
+            embedded = 0
+            log_info(f"{label} knowledge base indexing failed: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Lifespan — extension hook for app-level startup / teardown.
+#
+# AgentOS handles the MCP lifecycle (connect on startup, close on shutdown).
+# Knowledge indexing starts in the background so the server is ready immediately.
+# ---------------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(app):  # type: ignore[no-untyped-def]
+    log_info("AgentOS lifespan: startup")
+    indexing = asyncio.create_task(index_knowledge())
     try:
         yield
     finally:
+        indexing.cancel()
         log_info("AgentOS lifespan: shutdown")
 
 
