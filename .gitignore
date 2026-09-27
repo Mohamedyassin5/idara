@@ -69,3 +69,6 @@ db/sessions.db
 # Optional: local PyPI creds (uncomment if you ever create it)
 # .pypirc
 db/users.db*
+
+# Azure publish profiles (contain deployment passwords)
+*.PublishSettings
