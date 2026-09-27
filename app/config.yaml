@@ -1,0 +1,6 @@
+chat:
+  quick_prompts:
+    master-orchestrator:
+      - "Quels papiers faut-il pour renouveler ma carte d'identité ?"
+      - "Comment payer ma facture STEG en ligne ?"
+      - "Y a-t-il un louage de Tunis à Sousse ce soir ?"
