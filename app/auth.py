@@ -27,7 +27,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, create_engine, select
 from sqlalchemy.exc import IntegrityError
 
-from db.url import db_url
+from db.url import db_url, has_database_url
 
 JWT_ALGORITHM = "HS256"
 TOKEN_TTL = timedelta(hours=int(getenv("AUTH_TOKEN_HOURS", "12")))
@@ -62,7 +62,7 @@ users = Table(
 
 @cache
 def _engine():
-    url = db_url if getenv("DATABASE_URL") else f"sqlite:///{Path(__file__).parent.parent / 'db' / 'users.db'}"
+    url = db_url if has_database_url() else f"sqlite:///{Path(__file__).parent.parent / 'db' / 'users.db'}"
     engine = create_engine(url, pool_pre_ping=True)
     metadata.create_all(engine)
     return engine

@@ -9,6 +9,9 @@ import re
 from os import getenv
 from urllib.parse import quote
 
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
+
 
 def build_db_url() -> str:
     """Build database URL from environment variables.
@@ -36,3 +39,15 @@ def build_db_url() -> str:
 
 
 db_url = build_db_url()
+
+
+def has_database_url() -> bool:
+    """True when DATABASE_URL is set to a parseable URL (else callers fall back to local SQLite)."""
+    if not getenv("DATABASE_URL", "").strip():
+        return False
+    try:
+        make_url(db_url)
+    except ArgumentError:
+        print("WARNING: DATABASE_URL is set but is not a valid database URL; falling back to local SQLite.")
+        return False
+    return True

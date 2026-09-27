@@ -6,7 +6,6 @@ Database connections for AgentOS (PostgreSQL and SQLite).
 """
 
 from functools import cache
-from os import getenv
 from pathlib import Path
 
 from agno.db.postgres import PostgresDb
@@ -15,7 +14,7 @@ from agno.knowledge import Knowledge
 from agno.knowledge.embedder.openai import OpenAIEmbedder
 from agno.vectordb.pgvector import PgVector, SearchType
 
-from db.url import db_url
+from db.url import db_url, has_database_url
 
 DB_ID = "agentos-db"
 SQLITE_DB_ID = "agentos-sqlite-db"
@@ -38,7 +37,7 @@ def get_sqlite_db() -> SqliteDb:
 @cache
 def get_db() -> PostgresDb | SqliteDb:
     """Return the main AgentOS database: Postgres (e.g. Neon) when DATABASE_URL is set, else local SQLite."""
-    if getenv("DATABASE_URL"):
+    if has_database_url():
         return PostgresDb(id="agentos-main-db", db_url=db_url)
     return get_sqlite_db()
 
