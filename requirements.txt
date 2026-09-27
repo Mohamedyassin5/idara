@@ -13,7 +13,6 @@ certifi==2026.4.22
 cffi==2.0.0
 charset-normalizer==3.5.1
 click==8.5.0
-colorama==0.4.6
 croniter==6.2.2
 cryptography==48.0.0
 deprecation==2.1.0
@@ -93,7 +92,6 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 python-multipart==0.0.28
 pytz==2026.2
-pywin32==312
 pyyaml==6.0.3
 referencing==0.37.0
 requests==2.34.2
@@ -118,10 +116,10 @@ truststore==0.10.4
 typer==0.25.1
 typing-extensions==4.15.0
 typing-inspection==0.4.2
-tzdata==2026.4
 urllib3==2.7.0
 uuid-utils==0.17.1
 uvicorn==0.47.0
+uvloop==0.22.1
 voyageai==0.5.0
 watchfiles==1.1.1
 websockets==16.0
@@ -130,4 +128,3 @@ xxhash==4.0.1
 yarl==1.23.0
 zipp==3.23.1
 zstandard==0.25.0
-uvloop==0.22.1 ; sys_platform != 'win32'
