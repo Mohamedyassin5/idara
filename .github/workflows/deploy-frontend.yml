@@ -1,0 +1,39 @@
+name: Deploy frontend to Azure App Service
+
+on:
+  push:
+    branches: [frontend]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AZURE_WEBAPP_NAME: idara-tunisia # App Service (Code, Node 22 LTS, Linux)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      # Package = server.js + the Angular build in ./public (no node_modules needed)
+      - name: Package
+        run: |
+          mkdir -p package
+          cp server.js package/
+          cp -r dist/frontend/browser package/public
+
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND }}
+          package: package
