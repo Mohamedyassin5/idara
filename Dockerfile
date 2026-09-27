@@ -23,6 +23,9 @@ RUN uv pip sync requirements.txt --system
 
 COPY --chown=app:app . .
 
+# The app writes local state (lancedb index, sqlite fallback) under /app
+RUN mkdir -p /app/tmp && chown app:app /app /app/tmp
+
 # ---------------------------------------------------------------------------
 # Entrypoint
 # ---------------------------------------------------------------------------
@@ -33,4 +36,4 @@ USER app
 EXPOSE 8000
 
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
-CMD ["chill"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
