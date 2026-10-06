@@ -39,11 +39,11 @@ export interface HubConfig {
   description: L;
 }
 
-// Tunisian-inspired palette: Sidi Bou Saïd blue, flag red, ochre/terracotta, olive green.
-const BLUE = '#1f5fa8';
-const RED = '#c62828';
-const OCHRE = '#b8631f';
-const GREEN = '#2e7d5b';
+// Tunisian-inspired palette (Sidi Bou Saïd blue, flag red, ochre, olive), brightened for the black theme.
+const BLUE = '#5b9bea';
+const RED = '#f0605a';
+const OCHRE = '#e8954f';
+const GREEN = '#4fbf8c';
 
 export const HUBS: HubConfig[] = [
   {
@@ -129,7 +129,7 @@ export const AGENTS: AgentConfig[] = [
     backendId: 'steg-agent',
     hubId: 'admin-utilities-hub',
     icon: 'bolt',
-    accent: '#a86f00', // darker gold: the brighter yellow was too pale for text on cream
+    accent: '#e0b048',
     ready: true,
     name: { fr: 'STEG & SONEDE', ar: 'الستاغ والصوناد', en: 'STEG & SONEDE' },
     description: {
@@ -160,7 +160,7 @@ export const AGENTS: AgentConfig[] = [
     backendId: 'entrepreneuriat-agent',
     hubId: 'admin-utilities-hub',
     icon: 'rocket',
-    accent: '#6a3fa0',
+    accent: '#a98be6',
     ready: true,
     name: { fr: 'Entrepreneuriat', ar: 'بعث المشاريع', en: 'Entrepreneurship' },
     description: {
@@ -215,6 +215,11 @@ export const AGENTS: AgentConfig[] = [
         ar: 'شنوة القواعد اللي لازم نحترمها كراكب؟',
         en: 'What rules should passengers follow?',
       },
+      {
+        fr: 'Quelles stations de louage y a-t-il à Tunis ?',
+        ar: 'شنوة محطات اللواج الموجودة في تونس؟',
+        en: 'Which louage stations are there in Tunis?',
+      },
     ],
     form: {
       title: { fr: 'Planifier un trajet', ar: 'تخطيط رحلة', en: 'Plan a trip' },
@@ -244,7 +249,7 @@ export const AGENTS: AgentConfig[] = [
     backendId: 'parking-agent',
     hubId: 'mobility-city-hub',
     icon: 'parking',
-    accent: '#3a6ea5',
+    accent: '#74aaea',
     ready: true,
     name: { fr: 'Stationnement', ar: 'الوقوف', en: 'Parking' },
     description: {
@@ -269,13 +274,22 @@ export const AGENTS: AgentConfig[] = [
         en: 'Where can I find a covered car park?',
       },
     ],
+    form: {
+      title: { fr: 'Parkings autour de moi', ar: 'مواقف قريبة مني', en: 'Parkings near me' },
+      fields: [{ key: 'geo', type: 'geo', label: { fr: 'Coordonnées', ar: 'الإحداثيات', en: 'Coordinates' } }],
+      template: {
+        fr: 'Quels parkings sont repérés autour de ma position (latitude {lat}, longitude {lng}) ? Montre-les sur la carte.',
+        ar: 'شنوة المواقف القريبة من موقعي (خط العرض {lat}، خط الطول {lng})؟ ورّيهم على الخريطة.',
+        en: 'Which car parks are nearby my position (latitude {lat}, longitude {lng})? Show them on the map.',
+      },
+    },
   },
   {
     slug: 'souk',
     backendId: 'souk-agent',
     hubId: 'mobility-city-hub',
     icon: 'market',
-    accent: '#a5482a',
+    accent: '#e8836a',
     ready: true,
     name: { fr: 'Souks & marchés', ar: 'الأسواق', en: 'Souks & markets' },
     description: {
@@ -300,6 +314,15 @@ export const AGENTS: AgentConfig[] = [
         en: 'Souk or supermarket: which one?',
       },
     ],
+    form: {
+      title: { fr: 'Marchés autour de moi', ar: 'أسواق قريبة مني', en: 'Markets near me' },
+      fields: [{ key: 'geo', type: 'geo', label: { fr: 'Coordonnées', ar: 'الإحداثيات', en: 'Coordinates' } }],
+      template: {
+        fr: 'Quels souks ou marchés sont repérés autour de ma position (latitude {lat}, longitude {lng}) ? Montre-les sur la carte.',
+        ar: 'شنوة الأسواق القريبة من موقعي (خط العرض {lat}، خط الطول {lng})؟ ورّيهم على الخريطة.',
+        en: 'Which souks or markets are nearby my position (latitude {lat}, longitude {lng})? Show them on the map.',
+      },
+    },
   },
   {
     slug: 'bac',
@@ -337,7 +360,7 @@ export const AGENTS: AgentConfig[] = [
     backendId: 'job-agent',
     hubId: 'education-work-hub',
     icon: 'briefcase',
-    accent: '#0f7c8a',
+    accent: '#45c1cf',
     ready: true,
     name: { fr: 'Emploi & stages', ar: 'الشغل والتربصات', en: 'Jobs & internships' },
     description: {
@@ -360,40 +383,6 @@ export const AGENTS: AgentConfig[] = [
         fr: 'Quelle différence entre CDI et CDD ?',
         ar: 'شنوة الفرق بين CDI و CDD؟',
         en: 'What is the difference between a CDI and a CDD?',
-      },
-    ],
-    form: {
-      title: {
-        fr: 'Commerces autour de moi (candidature spontanée)',
-        ar: 'محلات قريبة مني (ترشح تلقائي)',
-        en: 'Businesses near me (spontaneous application)',
-      },
-      fields: [{ key: 'geo', type: 'geo', label: { fr: 'Coordonnées', ar: 'الإحداثيات', en: 'Coordinates' } }],
-      template: {
-        fr: 'Je cherche du travail dans le commerce autour de ma position (latitude {lat}, longitude {lng}), quelles boutiques sont à proximité pour tenter une candidature spontanée ?',
-        ar: 'نلوّج على شغل في التجارة قريب من موقعي (خط العرض {lat}، خط الطول {lng}). شنوة المحلات القريبة باش نعمل ترشح تلقائي؟',
-        en: 'I am looking for work in retail around my position (latitude {lat}, longitude {lng}): which shops are nearby for a spontaneous application?',
-      },
-    },
-  },
-  {
-    slug: 'kotob',
-    backendId: 'kotob-agent',
-    hubId: 'education-work-hub',
-    icon: 'book',
-    accent: '#8a5a2b',
-    ready: false,
-    name: { fr: 'Livres scolaires', ar: 'الكتب المدرسية', en: 'School books' },
-    description: {
-      fr: 'Disponibilité, échange et achat de livres et fournitures scolaires.',
-      ar: 'توفّر وتبادل وشراء الكتب واللوازم المدرسية.',
-      en: 'Availability, exchange and purchase of school books and supplies.',
-    },
-    prompts: [
-      {
-        fr: 'Où trouver des manuels scolaires d’occasion ?',
-        ar: 'وين نلقى كتب مدرسية مستعملة؟',
-        en: 'Where can I find second-hand textbooks?',
       },
     ],
   },
@@ -425,6 +414,11 @@ export const AGENTS: AgentConfig[] = [
         fr: 'Quels frais prévoir quand on loue ?',
         ar: 'شنوة المصاريف اللي لازم نحسب لها عند الكراء؟',
         en: 'What costs should I expect when renting?',
+      },
+      {
+        fr: 'Compare le loyer moyen entre quelques quartiers de Tunis',
+        ar: 'قارن الكراء المتوسط بين شوية أحياء في تونس',
+        en: 'Compare the average rent across a few Tunis neighbourhoods',
       },
     ],
     form: {
@@ -458,7 +452,7 @@ export const AGENTS: AgentConfig[] = [
     backendId: 'benevolat-agent',
     hubId: 'housing-community-hub',
     icon: 'heart',
-    accent: '#c2410c',
+    accent: '#f2844f',
     ready: false,
     name: { fr: 'Bénévolat & associations', ar: 'التطوع والجمعيات', en: 'Volunteering & associations' },
     description: {

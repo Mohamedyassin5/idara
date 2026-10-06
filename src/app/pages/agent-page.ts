@@ -1,11 +1,14 @@
-import { Component, computed, effect, inject, input, signal, untracked, viewChild, ElementRef } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { marked } from 'marked';
 import { AgentConfig, AgentForm, FormField, HUBS, agentBySlug, agentByBackendId } from '../core/agents';
 import { ChatError, ChatMessage, ChatService } from '../core/chat.service';
 import { I18n } from '../core/i18n';
 import { Icon } from '../core/icon';
+import { AnswerCards } from '../shared/answer-cards';
+import { ConversationList } from '../shared/conversation-list';
+import { CvWorkspace } from '../shared/cv-workspace';
+import { GeoResult } from '../shared/geo-result';
 
 const TUNIS_CENTRE = { lat: '36.8002', lng: '10.1815' };
 
@@ -15,7 +18,7 @@ const ASSISTANT: AgentConfig = {
   backendId: '',
   hubId: '',
   icon: 'compass',
-  accent: '#1f5fa8',
+  accent: '#5b9bea',
   ready: true,
   name: { fr: 'Assistant Idara', ar: 'مساعد إدارة', en: 'Idara assistant' },
   description: {
@@ -43,7 +46,7 @@ const ASSISTANT: AgentConfig = {
 };
 
 @Component({
-  imports: [FormsModule, RouterLink, Icon],
+  imports: [FormsModule, RouterLink, Icon, GeoResult, AnswerCards, CvWorkspace, ConversationList],
   template: `
     @if (agent(); as a) {
       <div class="agent-page" [style.--accent]="a.accent">
@@ -69,7 +72,14 @@ const ASSISTANT: AgentConfig = {
           </div>
         </section>
 
-        <div class="container narrow chat">
+        <div class="container narrow workspace-body">
+          @if (isJob()) {
+            <section class="block">
+              <h2 class="block-title">{{ i18n.t('cvTitle') }}</h2>
+              <app-cv-workspace [accent]="a.accent" />
+            </section>
+          }
+
           @if (a.form; as form) {
             <details class="quick-form" open>
               <summary>{{ i18n.pick(form.title) }}</summary>
@@ -119,51 +129,67 @@ const ASSISTANT: AgentConfig = {
             </details>
           }
 
-          @if (messages().length === 0) {
-            <div class="suggestions">
-              <h2>{{ i18n.t('suggestions') }}</h2>
-              <div class="chips">
+          @if (a.prompts.length) {
+            <section class="block">
+              <h2 class="block-title">{{ i18n.t('suggestions') }}</h2>
+              <div class="tiles">
                 @for (p of a.prompts; track p.fr) {
-                  <button type="button" class="chip action" (click)="send(i18n.pick(p))" [disabled]="loading()">
-                    {{ i18n.pick(p) }}
+                  <button type="button" class="tile" (click)="send(i18n.pick(p))" [disabled]="loading()">
+                    <span class="tile-ico" aria-hidden="true"><app-icon [name]="a.icon" /></span>
+                    <span>{{ i18n.pick(p) }}</span>
                   </button>
                 }
               </div>
-            </div>
+            </section>
           }
 
-          <ol class="messages" aria-live="polite">
-            @for (m of messages(); track $index) {
-              <li class="msg" [class.user]="m.role === 'user'" [class.error]="m.role === 'error'">
-                @if (m.role === 'user') {
-                  <span class="who">{{ i18n.t('you') }}</span>
-                  <p>{{ m.text }}</p>
-                } @else if (m.role === 'error') {
-                  <p>{{ m.text }}</p>
-                } @else {
-                  <span class="who"><app-icon [name]="a.icon" /> {{ i18n.t('assistantName') }}</span>
-                  <div class="md" [innerHTML]="render(m.text)"></div>
-                  @if (answeredBy(m); as by) {
-                    <p class="by">{{ i18n.t('answeredBy') }} <strong>{{ by }}</strong></p>
-                  }
-                  @if (wrongAgent(m)) {
-                    <p class="by warn">{{ i18n.t('routedElsewhere') }}</p>
-                  }
-                }
-              </li>
+          <section class="block">
+            <app-conversation-list
+              [domain]="key()"
+              [activeId]="activeId()"
+              [refresh]="refresh()"
+              (open)="openConversation($event)"
+              (created)="newConversation()"
+            />
+          </section>
+
+          <section class="block result-panel" aria-live="polite">
+            @if (lastQuestion(); as q) {
+              <p class="asked">{{ q }}</p>
             }
+
             @if (loading()) {
-              <li class="msg thinking"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span> {{ i18n.t('thinking') }}</li>
+              <div class="panel-state">
+                <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span> {{ i18n.t('thinking') }}
+              </div>
+            } @else if (lastResult(); as m) {
+              @if (m.role === 'error') {
+                <p class="panel-error">{{ m.text }}</p>
+              } @else {
+                <app-answer-cards [content]="m.text" [accent]="a.accent" />
+                @if (m.geo; as geo) {
+                  <app-geo-result [payload]="geo" [accent]="a.accent" />
+                }
+                @if (answeredBy(m); as by) {
+                  <p class="by">{{ i18n.t('answeredBy') }} <strong>{{ by }}</strong></p>
+                }
+                @if (wrongAgent(m)) {
+                  <p class="by warn">{{ i18n.t('routedElsewhere') }}</p>
+                }
+                <button type="button" class="btn ghost reset" (click)="reset()">{{ i18n.t('newChat') }}</button>
+              }
+            } @else if (!isJob()) {
+              <div class="panel-state empty">
+                <span class="panel-icon"><app-icon [name]="a.icon" /></span>
+                <strong>{{ i18n.t('mapEmptyTitle') }}</strong>
+                <span class="hint">{{ i18n.t('mapEmptySub') }}</span>
+              </div>
             }
-          </ol>
-          <div #bottom></div>
+          </section>
         </div>
 
         <form class="composer" (ngSubmit)="send(draft())">
           <div class="container narrow composer-row">
-            @if (messages().length) {
-              <button type="button" class="btn ghost" (click)="reset()">{{ i18n.t('newChat') }}</button>
-            }
             <input
               name="draft"
               [ngModel]="draft()"
@@ -194,12 +220,30 @@ export class AgentPage {
   readonly assistant = input<boolean>(false);
   readonly q = input<string>();
 
-  private readonly bottom = viewChild<ElementRef<HTMLElement>>('bottom');
-
   protected readonly agent = computed(() => (this.assistant() ? ASSISTANT : agentBySlug(this.slug() ?? '')));
-  private readonly key = computed(() => (this.assistant() ? 'assistant' : (this.slug() ?? '')));
+  protected readonly key = computed(() => (this.assistant() ? 'assistant' : (this.slug() ?? '')));
   private readonly conv = computed(() => this.chat.conversation(this.key()));
   protected readonly messages = computed(() => this.conv().messages());
+
+  /** The job agent is the CV workspace: its page leads with the upload board, not a question list. */
+  protected readonly isJob = computed(() => this.agent()?.backendId === 'job-agent');
+
+  /** Only the last answer is shown: the workspace replaces its content each time, it never stacks. */
+  protected readonly lastResult = computed<ChatMessage | null>(() => {
+    const msgs = this.messages();
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role !== 'user') return msgs[i];
+    }
+    return null;
+  });
+
+  protected readonly lastQuestion = computed(() => {
+    const msgs = this.messages();
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role === 'user') return msgs[i].text;
+    }
+    return '';
+  });
 
   protected readonly hubName = computed(() => {
     const hub = HUBS.find((h) => h.id === this.agent()?.hubId);
@@ -207,6 +251,8 @@ export class AgentPage {
   });
 
   protected readonly loading = signal(false);
+  protected readonly refresh = signal(0);
+  protected readonly activeId = signal('');
   protected readonly draft = signal('');
   protected readonly values = signal<Record<string, string>>({});
   protected readonly lat = signal(TUNIS_CENTRE.lat); // default: Tunis centre, so the form works without geolocation
@@ -217,12 +263,9 @@ export class AgentPage {
   private autoAsked = false;
 
   constructor() {
-    // Scroll to the newest message.
     effect(() => {
-      this.messages();
-      this.loading();
-      const el = this.bottom()?.nativeElement;
-      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'end' }));
+      this.key();
+      untracked(() => this.activeId.set(this.conv().session));
     });
     // /assistant?q=… (from the home page): send the question once.
     effect(() => {
@@ -232,10 +275,6 @@ export class AgentPage {
         untracked(() => this.send(q));
       }
     });
-  }
-
-  protected render(text: string): string {
-    return marked.parse(text, { async: false, breaks: true }) as string; // sanitized by Angular in [innerHTML]
   }
 
   protected answeredBy(m: ChatMessage): string {
@@ -254,14 +293,17 @@ export class AgentPage {
     if (!question || !a || this.loading()) return;
 
     const conv = this.conv();
+    const isFirst = conv.messages().length === 0;
     conv.messages.update((list) => [...list, { role: 'user', text: question }]);
     this.draft.set('');
     this.loading.set(true);
 
     this.chat.ask(this.withDomainHint(a, question), conv.session).subscribe({
       next: (ans) => {
-        conv.messages.update((list) => [...list, { role: 'assistant', text: ans.content, agentId: ans.agentId }]);
+        conv.messages.update((list) => [...list, { role: 'assistant', text: ans.content, agentId: ans.agentId, geo: ans.geo }]);
         this.loading.set(false);
+        if (isFirst) this.chat.tagSession(conv.session, this.key(), question).subscribe();
+        this.refresh.update((n) => n + 1);
       },
       error: (err: unknown) => {
         const kind = err instanceof ChatError ? err.kind : 'generic';
@@ -276,6 +318,20 @@ export class AgentPage {
 
   protected reset(): void {
     this.chat.reset(this.key());
+    this.activeId.set(this.conv().session);
+  }
+
+  protected newConversation(): void {
+    this.reset();
+  }
+
+  protected openConversation(sessionId: string): void {
+    const conv = this.conv();
+    this.chat.loadSession(sessionId).subscribe((messages) => {
+      conv.session = sessionId;
+      conv.messages.set(messages);
+      this.activeId.set(sessionId);
+    });
   }
 
   // ---- quick form -------------------------------------------------------------------------------

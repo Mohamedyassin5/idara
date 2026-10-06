@@ -91,6 +91,19 @@ const ICONS = {
   ],
   arrow: [{ d: 'M5 12h14M13 6l6 6-6 6' }],
   send: [{ d: 'M21 3 10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5z', tone: true }],
+  // Conversations : punaise, carton d'archive, corbeille
+  thumbtack: [
+    { d: 'M9 3h6l-1 6 3 3v1H7v-1l3-3z', tone: true },
+    { d: 'M12 13v8' },
+  ],
+  archive: [
+    { d: 'M3 4h18v4H3z', tone: true },
+    { d: 'M5 8v12h14V8M10 12h4' },
+  ],
+  trash: [
+    { d: 'M4 7h16M9 7V4h6v3' },
+    { d: 'M6 7l1 13h10l1-13' },
+  ],
   locate: [
     { circle: [12, 12, 3.5], tone: true },
     { d: 'M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3' },

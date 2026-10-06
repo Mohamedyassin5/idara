@@ -69,7 +69,7 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent) 60%, white);
+  outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
   outline-offset: 2px;
 }
 
@@ -138,7 +138,7 @@ a {
 }
 
 .lang-switch button.active {
-  background: #fff;
+  background: var(--glass);
   color: var(--blue-deep);
   font-weight: 700;
 }
@@ -202,7 +202,7 @@ a {
   display: flex;
   gap: 0.5rem;
   padding: 0.4rem;
-  background: #fff;
+  background: var(--glass);
   border: 2px solid var(--blue);
   border-radius: 999px;
   box-shadow: var(--shadow);
@@ -266,7 +266,7 @@ a {
   flex-direction: column;
   gap: 0.35rem;
   padding: 1.2rem 1.1rem 1.1rem;
-  background: #fff;
+  background: var(--glass);
   border: 1.5px solid var(--line);
   border-block-start: 4px solid var(--accent);
   border-start-start-radius: 60px;
@@ -336,7 +336,7 @@ a {
 
 .agent-icon::after,
 .hub-icon::after {
-  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 82%, white), var(--accent) 55%, color-mix(in srgb, var(--accent) 80%, black));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 82%, transparent), var(--accent) 55%, color-mix(in srgb, var(--accent) 80%, black));
 }
 
 .agent-icon app-icon,
@@ -402,7 +402,7 @@ a {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, white);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-radius: 999px;
 }
 
@@ -442,7 +442,7 @@ a {
 }
 
 .btn.ghost {
-  background: #fff;
+  background: var(--glass);
   color: var(--accent);
   border-color: var(--accent);
 }
@@ -513,7 +513,7 @@ a {
 .quick-form {
   margin-block-end: 1.2rem;
   padding: 0.8rem 1rem 1rem;
-  background: #fff;
+  background: var(--glass);
   border: 1.5px dashed var(--accent);
   border-radius: var(--radius);
 }
@@ -568,7 +568,7 @@ select {
   padding: 0.5rem 0.75rem;
   border: 1.5px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--glass);
   color: var(--ink);
   min-width: 0;
 }
@@ -594,14 +594,14 @@ select:focus {
   padding: 0.4rem 0.9rem;
   font: inherit;
   font-size: 0.92rem;
-  background: #fff;
+  background: var(--glass);
   cursor: pointer;
   text-align: start;
   border-radius: 14px;
 }
 
 .chip.action:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 12%, white);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .messages {
@@ -616,7 +616,7 @@ select:focus {
 .msg {
   max-width: 92%;
   padding: 0.7rem 1rem;
-  background: #fff;
+  background: var(--glass);
   border: 1.5px solid var(--line);
   border-radius: var(--radius);
   border-start-start-radius: 4px;
@@ -625,8 +625,8 @@ select:focus {
 
 .msg.user {
   align-self: flex-end;
-  background: color-mix(in srgb, var(--accent) 10%, white);
-  border-color: color-mix(in srgb, var(--accent) 35%, white);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
   border-start-start-radius: var(--radius);
   border-start-end-radius: 4px;
 }
@@ -667,6 +667,135 @@ select:focus {
   color: var(--muted);
   background: transparent;
   border-style: dashed;
+}
+
+/* Agent workspace: stacked blocks (CV board, question tiles, result) instead of a chat thread. */
+.workspace-body {
+  flex: 1;
+  padding-block: 1.4rem 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.block-title {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.6rem;
+}
+
+.tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem;
+  text-align: start;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: var(--glass);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s, background 0.15s;
+}
+
+.tile:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  transform: translateY(-1px);
+}
+
+.tile:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.tile-ico {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.reset {
+  margin-block-start: 1rem;
+}
+
+/* Map agents (parking, louage, souk, immobilier, job): one fixed result panel, replaced in place —
+   never a growing chat log, so the map always has the same predictable spot on the page. */
+.workspace {
+  margin-block-start: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.asked {
+  margin: 0;
+  padding: 0.6rem 0.95rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.result-panel {
+  min-height: 220px;
+  padding: 1rem;
+  background: var(--glass);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.panel-state {
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.panel-state.empty .panel-icon {
+  display: inline-flex;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+.panel-state.empty strong {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.panel-state.empty .hint {
+  max-width: 32ch;
+  font-size: 0.88rem;
+}
+
+.panel-error {
+  margin: 0;
+  color: #7a1616;
 }
 
 .dots i {
@@ -1062,32 +1191,58 @@ select:focus {
   }
 }
 
-/* ---- Thème simple : fond blanc, texte noir ---------------------------------------------------- */
+/* ---- Thème noir classique + verre dépoli ---------------------------------------------------------
+   Fond noir profond, texte blanc, panneaux translucides floutés (backdrop-filter). Deux halos très
+   discrets restent fixés derrière la page : sans eux, un flou sur un aplat noir serait invisible. */
 
 :root {
-  --chalk: #fff;
-  --sand: #fff;
-  --ink: #000;
-  --muted: #000;
-  --line: #d9d9d9;
-  --blue-deep: #000;
-  --shadow: none;
+  --bg: #050505;
+  --bg-elev: #111113;
+  --chalk: #0f0f11;
+  --sand: #17171a;
+  --ink: #f5f5f7;
+  --muted: #a1a1aa;
+  --line: rgb(255 255 255 / 12%);
+  --blue: #5b9bea;
+  --blue-deep: #f5f5f7;
+  --red: #f0605a;
+  --ochre: #e8954f;
+  --green: #4fbf8c;
+  --accent: var(--blue);
+  --on-accent: #0b0b0c;
+  --glass: rgb(255 255 255 / 5%);
+  --glass-strong: rgb(255 255 255 / 9%);
+  --glass-border: rgb(255 255 255 / 13%);
+  --blur: blur(18px) saturate(150%);
+  --shadow: 0 12px 32px rgb(0 0 0 / 45%);
   --zellige: none;
+  color-scheme: dark;
 }
 
-body,
+body {
+  background:
+    radial-gradient(900px 600px at 12% -10%, rgb(91 155 234 / 10%), transparent 60%),
+    radial-gradient(800px 600px at 100% 110%, rgb(232 149 79 / 8%), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--ink);
+}
+
 .hero,
 .agent-hero,
-.composer,
 .footer,
 .orbit-arch {
-  background: #fff;
-  color: #000;
+  background: transparent;
+  color: var(--ink);
 }
 
 .hero,
 .agent-hero {
   animation: none;
+}
+
+.agent-hero {
+  border-block-end: 1px solid var(--glass-border);
 }
 
 .orbit-arch {
@@ -1101,138 +1256,228 @@ body,
 h1,
 h2,
 h3,
-.eyebrow,
 .lead,
 .hub-head h3,
-.hub-head p,
 .agent-name,
-.agent-desc,
 .agent-title h1,
+.quick-form summary,
+.msg .who,
+.md a {
+  color: var(--ink);
+}
+
+.eyebrow,
+.hub-head p,
+.agent-desc,
 .agent-title p,
 .agent-go,
 .back,
-.quick-form summary,
 .suggestions h2,
-.msg .who,
+.block-title,
 .msg .by,
 .msg.thinking,
-.md a,
 .footer,
 .footer .made,
-.hint-error {
-  color: #000;
+.panel-state,
+.panel-state.empty .panel-icon {
+  color: var(--muted);
+}
+
+.hint-error,
+.panel-error {
+  color: #ff9a94;
+}
+
+/* Barre du haut et compositeur : verre collé au bord */
+.topbar,
+.composer {
+  background: rgb(5 5 5 / 60%);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  color: var(--ink);
+  border-color: var(--glass-border);
 }
 
 .topbar {
-  background: #fff;
-  color: #000;
-  border-block-end: 1px solid var(--line);
+  border-block-end: 1px solid var(--glass-border);
+}
+
+.composer {
+  border-block-start: 1px solid var(--glass-border);
 }
 
 .lang-switch {
-  background: #fff;
-  border: 1px solid var(--line);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
 }
 
 .lang-switch button {
-  color: #000;
+  color: var(--muted);
 }
 
 .lang-switch button.active {
-  background: #000;
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-accent);
 }
 
 .brand-mark path:first-of-type {
-  fill: #fff;
-  stroke: #000;
+  fill: var(--bg);
+  stroke: var(--ink);
   stroke-width: 3;
 }
 
 .brand-mark path:nth-of-type(2),
 .brand-mark circle {
-  fill: #000;
+  fill: var(--ink);
 }
 
+/* Panneaux de conversation et cartes : verre dépoli */
 .ask-bar,
 .agent-card,
 .quick-form,
 .msg,
-input,
-select {
-  border-color: #000;
+.result-panel,
+.tile,
+.asked,
+.notice,
+.auth {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+
+.result-panel {
+  background: rgb(255 255 255 / 3%);
+}
+
+.asked {
   box-shadow: none;
+  background: var(--glass-strong);
+}
+
+.quick-form {
+  border-style: dashed;
+}
+
+.msg.user {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.msg.error {
+  background: rgb(240 96 90 / 12%);
+  border-color: rgb(240 96 90 / 35%);
+  color: #ffc9c6;
+}
+
+.notice {
+  border-inline-start: 4px solid var(--ochre);
 }
 
 .agent-card {
-  border-block-start-width: 1.5px;
+  border-block-start-width: 1px;
   border-radius: var(--radius);
 }
 
-.agent-card:hover {
-  transform: none;
-  box-shadow: none;
-  background: #f5f5f5;
+.agent-card:hover,
+.tile:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: var(--glass-strong);
+  border-color: var(--accent);
 }
 
 .hub-head {
-  border-block-end-color: #000;
+  border-block-end-color: var(--glass-border);
+}
+
+input,
+select {
+  background: rgb(255 255 255 / 6%);
+  color: var(--ink);
+  border: 1px solid var(--glass-border);
+  box-shadow: none;
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+input:focus,
+select:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+select option {
+  background: var(--bg-elev);
+  color: var(--ink);
 }
 
 .btn.primary {
-  background: #000;
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-accent);
+  border-color: var(--ink);
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: #ffffff;
 }
 
 .btn.ghost {
-  background: #fff;
-  color: #000;
-  border-color: #000;
+  background: var(--glass);
+  color: var(--ink);
+  border: 1px solid var(--glass-border);
+}
+
+.btn.ghost:hover:not(:disabled) {
+  background: var(--glass-strong);
 }
 
 .hero .btn.primary {
-  --accent: #000;
+  --accent: var(--ink);
 }
 
 .chip,
 .chip.soon,
 .chip.action {
-  color: #000;
-  background: #fff;
-  border: 1px solid #000;
+  color: var(--ink);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
 }
 
 .chip.action:hover:not(:disabled) {
-  background: #f0f0f0;
+  background: var(--glass-strong);
 }
 
-.msg,
-.msg.user {
-  background: #fff;
-  border-color: #000;
-}
-
-.msg.user {
-  background: #f5f5f5;
-}
-
-.msg.error,
-.notice {
-  background: #fff;
-  color: #000;
-  border-color: #000;
+.tile-ico {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
 }
 
 .md th {
-  background: #f5f5f5;
+  background: var(--glass-strong);
+}
+
+.md td,
+.md th {
+  border-color: var(--glass-border);
+}
+
+.md code {
+  background: var(--glass-strong);
+  color: var(--ink);
 }
 
 .footer {
-  border-block-start: 1px solid var(--line);
+  border-block-start: 1px solid var(--glass-border);
 }
 
 .dots i {
-  background: #000;
+  background: var(--ink);
 }
 
 /* ---- Page d'accueil (landing) ----------------------------------------------------------------- */
@@ -1284,7 +1529,7 @@ select {
   max-width: 1080px;
   margin-inline: auto;
   padding: clamp(2.5rem, 6vw, 4rem) clamp(1rem, 4vw, 2rem);
-  border-block-start: 1px solid #000;
+  border-block-start: 1px solid var(--glass-border);
 }
 
 .landing-features h2,
@@ -1302,7 +1547,7 @@ select {
 
 .landing-grid article {
   padding-block-start: 1rem;
-  border-block-start: 2px solid #000;
+  border-block-start: 2px solid var(--accent);
 }
 
 .landing-num {
@@ -1385,10 +1630,12 @@ select {
   gap: 0.55rem;
   padding: 1.4rem;
   align-items: flex-start;
-  background: #fff;
-  border: 1px solid #e6e6e6;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
   border-radius: 22px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 8px 24px rgb(0 0 0 / 5%);
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease,
@@ -1397,9 +1644,9 @@ select {
 
 .marquee .agent-card:hover {
   transform: translateY(-6px);
-  background: #fff;
+  background: var(--glass);
   border-color: var(--accent);
-  box-shadow: 0 2px 4px rgb(0 0 0 / 6%), 0 18px 36px rgb(0 0 0 / 10%);
+  box-shadow: 0 18px 40px rgb(0 0 0 / 55%);
 }
 
 /* Icône : carré arrondi plein, sans le motif khatem */
@@ -1407,7 +1654,7 @@ select {
   --badge: 3.2rem;
   margin: 0 0 0.4rem;
   border-radius: 16px;
-  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--accent);
   transition: background 0.25s ease, color 0.25s ease;
 }
@@ -1423,20 +1670,20 @@ select {
 
 .marquee .agent-card:hover .agent-icon {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .marquee .agent-name {
   text-align: start;
   font-size: 1.1rem;
-  color: #000;
+  color: var(--ink);
 }
 
 .marquee .agent-desc {
   text-align: start;
   font-size: 0.9rem;
   line-height: 1.5;
-  color: #555;
+  color: var(--muted);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -1448,8 +1695,8 @@ select {
   margin-block-start: auto;
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
-  background: #000;
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-accent);
   opacity: 1;
   transition: transform 0.25s ease;
 }
@@ -1524,9 +1771,9 @@ select {
   max-width: 420px;
   margin: clamp(2rem, 8vw, 5rem) auto;
   padding: 2rem clamp(1rem, 4vw, 2rem);
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--glass-border);
   border-radius: 22px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 6%);
+  box-shadow: var(--shadow);
 }
 
 .auth h1 {
@@ -1562,7 +1809,9 @@ select {
 .auth-error {
   margin: 0;
   padding: 0.6rem 0.9rem;
-  border: 1px solid #000;
+  border: 1px solid rgb(240 96 90 / 40%);
+  background: rgb(240 96 90 / 12%);
+  color: #ffc9c6;
   border-radius: 10px;
 }
 
@@ -1573,4 +1822,23 @@ select {
 
 .auth-switch a {
   font-weight: 700;
+}
+
+/* Answer cards: headings from the model stay modest and white, never a display title. */
+.md h1,
+.md h2,
+.md h3,
+.md h4 {
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0.9rem 0 0.35rem;
+  color: var(--ink);
+}
+
+.md h1:first-child,
+.md h2:first-child,
+.md h3:first-child {
+  margin-block-start: 0;
 }
