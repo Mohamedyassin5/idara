@@ -1,0 +1,74 @@
+[
+  {
+    "id": "tunis-lac",
+    "quartier": "Les Berges du Lac",
+    "ville": "Tunis",
+    "lat": 36.8386,
+    "lng": 10.2394,
+    "type_dominant": "Haut standing",
+    "loyer_indicatif_min": 1200,
+    "loyer_indicatif_max": 2500,
+    "devise": "DT/mois",
+    "note": "Estimation générale pour un F3, non contractuelle (à confirmer)"
+  },
+  {
+    "id": "tunis-menzah",
+    "quartier": "El Menzah",
+    "ville": "Tunis",
+    "lat": 36.8433,
+    "lng": 10.1719,
+    "type_dominant": "Résidentiel",
+    "loyer_indicatif_min": 700,
+    "loyer_indicatif_max": 1400,
+    "devise": "DT/mois",
+    "note": "Estimation générale pour un F3, non contractuelle (à confirmer)"
+  },
+  {
+    "id": "tunis-ariana",
+    "quartier": "Ariana Centre",
+    "ville": "Ariana",
+    "lat": 36.8625,
+    "lng": 10.1956,
+    "type_dominant": "Résidentiel",
+    "loyer_indicatif_min": 500,
+    "loyer_indicatif_max": 1000,
+    "devise": "DT/mois",
+    "note": "Estimation générale pour un F3, non contractuelle (à confirmer)"
+  },
+  {
+    "id": "tunis-bardo",
+    "quartier": "Le Bardo",
+    "ville": "Tunis",
+    "lat": 36.8092,
+    "lng": 10.1397,
+    "type_dominant": "Populaire",
+    "loyer_indicatif_min": 350,
+    "loyer_indicatif_max": 650,
+    "devise": "DT/mois",
+    "note": "Estimation générale pour un F3, non contractuelle (à confirmer)"
+  },
+  {
+    "id": "marsa",
+    "quartier": "La Marsa",
+    "ville": "La Marsa",
+    "lat": 36.8782,
+    "lng": 10.3247,
+    "type_dominant": "Haut standing",
+    "loyer_indicatif_min": 900,
+    "loyer_indicatif_max": 2000,
+    "devise": "DT/mois",
+    "note": "Estimation générale pour un F3, non contractuelle (à confirmer)"
+  },
+  {
+    "id": "sousse-centre",
+    "quartier": "Sousse Centre",
+    "ville": "Sousse",
+    "lat": 35.8256,
+    "lng": 10.6411,
+    "type_dominant": "Résidentiel",
+    "loyer_indicatif_min": 400,
+    "loyer_indicatif_max": 800,
+    "devise": "DT/mois",
+    "note": "Estimation générale pour un F3, non contractuelle (à confirmer)"
+  }
+]

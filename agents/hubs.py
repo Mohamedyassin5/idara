@@ -14,7 +14,6 @@ from agents.admin_utilities.entrepreneuriat_agent import entrepreneuriat_agent
 from agents.admin_utilities.steg_agent import steg_agent
 from agents.education_work.bac_agent import bac_agent
 from agents.education_work.job_agent import job_agent
-from agents.education_work.kotob_agent import kotob_agent
 from agents.housing_community.benevolat_agent import benevolat_agent
 from agents.housing_community.immobilier_agent import immobilier_agent
 from agents.mobility_city.louage_agent import louage_agent
@@ -57,14 +56,14 @@ mobility_city_hub = Team(
 )
 
 # ---------------------------------------------------------------------------
-# Education & Work — bac/concours, emploi, livres scolaires
+# Education & Work — bac/concours, emploi
 # ---------------------------------------------------------------------------
 education_work_hub = Team(
     id="education-work-hub",
     name="Education & Work Hub",
-    role="Bac et concours, recherche d'emploi, livres scolaires",
+    role="Bac et concours, recherche d'emploi",
     model=chat_model(),
-    members=[bac_agent, job_agent, kotob_agent],
+    members=[bac_agent, job_agent],
     instructions=HUB_INSTRUCTIONS.format(hub="education_work"),
     respond_directly=True,
     markdown=True,

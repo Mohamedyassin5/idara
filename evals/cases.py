@@ -10,7 +10,7 @@ Case kinds:
 - ``domain``      one clear, typical question per real agent, written without the agent's obvious keyword
                   (tests understanding of the meaning, not lexical overlap).
 - ``trap``        deliberately ambiguous: looks like it belongs to another hub/agent but belongs here.
-- ``placeholder`` agents that are still stubs (kotob, benevolat): routing must reach them, not a real agent.
+- ``placeholder`` agents that are still stubs (benevolat): routing must reach them, not a real agent.
 
 Add a case below, then run `python -m evals`.
 """
@@ -27,7 +27,6 @@ HUB_OF: dict[str, str] = {
     "souk-agent": "mobility-city-hub",
     "bac-agent": "education-work-hub",
     "job-agent": "education-work-hub",
-    "kotob-agent": "education-work-hub",
     "immobilier-agent": "housing-community-hub",
     "benevolat-agent": "housing-community-hub",
 }
@@ -123,12 +122,6 @@ CASES: tuple[RoutingCase, ...] = (
         kind="trap",
     ),
     # --- Placeholder agents ------------------------------------------------------------------
-    RoutingCase(
-        name="placeholder_kotob_manuels",
-        question="Où trouver des manuels scolaires d'occasion pour mon fils qui entre en sixième ?",
-        expected_agent="kotob-agent",
-        kind="placeholder",
-    ),
     RoutingCase(
         name="placeholder_benevolat_aide",
         question="J'ai du temps libre le week-end et je voudrais aider des personnes âgées de mon quartier, comment m'engager ?",

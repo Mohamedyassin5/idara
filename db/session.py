@@ -11,9 +11,9 @@ from pathlib import Path
 from agno.db.postgres import PostgresDb
 from agno.db.sqlite import SqliteDb
 from agno.knowledge import Knowledge
-from agno.knowledge.embedder.openai import OpenAIEmbedder
 from agno.vectordb.pgvector import PgVector, SearchType
 
+from agents.tools.embedder import make_embedder
 from db.url import db_url, has_database_url
 
 DB_ID = "agentos-db"
@@ -72,7 +72,7 @@ def create_knowledge(name: str, table_name: str) -> Knowledge:
             db_url=db_url,
             table_name=table_name,
             search_type=SearchType.hybrid,
-            embedder=OpenAIEmbedder(id="text-embedding-3-small"),
+            embedder=make_embedder(),
         ),
         contents_db=get_postgres_db(contents_table=f"{table_name}_contents"),
     )

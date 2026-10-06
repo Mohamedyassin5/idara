@@ -65,8 +65,33 @@ def _format_places(places: list[dict]) -> str:  # type: ignore[type-arg]
             parts.append(f"téléphone : {place['phone']}")
         if place.get("opening_hours"):
             parts.append(f"horaires : {place['opening_hours']}")
+        if place.get("lat") is not None and place.get("lng") is not None:
+            parts.append(f"coords : {place['lat']},{place['lng']}")
         lines.append(", ".join(parts))
     return "\n".join(lines)
+
+
+def places_to_geo_json(places: list[dict], geo_type: str) -> str:  # type: ignore[type-arg]
+    """Build the exact ```geo payload an agent must copy verbatim after listing these places.
+
+    Keeps only the fields the frontend map needs, straight from the API response, so the model
+    never has to retype (and risk altering) a name or a coordinate by hand.
+    """
+    items = [
+        {
+            "id": p.get("id"),
+            "name": p.get("name"),
+            "lat": p.get("lat"),
+            "lng": p.get("lng"),
+            "category": p.get("category"),
+            "address": p.get("address"),
+            "phone": p.get("phone"),
+            "distance_m": round(p["distance"]) if p.get("distance") is not None else None,
+        }
+        for p in places
+        if p.get("lat") is not None and p.get("lng") is not None
+    ]
+    return json.dumps({"type": geo_type, "items": items}, ensure_ascii=False)
 
 
 @tool
@@ -76,6 +101,7 @@ def find_nearby_places(
     radius_meters: int = 2000,
     categories: str | None = None,
     query: str | None = None,
+    geo_type: str | None = None,
 ) -> str:
     """Find points of interest (shops, services, banks, schools…) around a GPS coordinate in Tunisia.
 
@@ -95,6 +121,9 @@ def find_nearby_places(
                     pharmacy, bank, atm, fuel, hotel, parking, transit, municipality, health, education,
                     shopping, culture, mosque, place_of_worship (e.g. "shopping,cafe").
         query: Optional text filter on the place name (e.g. "boutique").
+        geo_type: When set (e.g. "parking", "souk"), appends a ```geo fenced block built straight from
+                  these results, for an agent whose instructions ask it to show the results on a map.
+                  Leave unset for a plain text answer.
 
     Returns:
         A text list of places with name, category, distance in metres, address and phone number when
@@ -165,4 +194,10 @@ def find_nearby_places(
         )
         return "\n".join(notes)
 
-    return "\n".join([*notes, _format_places(data)])
+    text = "\n".join([*notes, _format_places(data)])
+    if geo_type:
+        text += (
+            "\n\nBloc à recopier tel quel, sans aucune modification, dans un ```geo ... ``` à LA FIN de ta "
+            f"réponse :\n{places_to_geo_json(data, geo_type)}"
+        )
+    return text

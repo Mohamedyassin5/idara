@@ -6,26 +6,29 @@ Hub: mobility_city — le louage en Tunisie : fonctionnement, stations, tarifs i
 comparaison avec le bus et le train, conseils aux passagers.
 
 RAG over agents/mobility_city/knowledge/louage_kb.md, embedded into a local LanceDb
-table (tmp/lancedb, table "louage_kb") with Voyage AI embeddings. Call `load_louage_knowledge()`
+table (tmp/lancedb, table "louage_kb") with local multilingual embeddings (fastembed). Call `load_louage_knowledge()`
 once before running the agent so the vector table is populated.
 
 The knowledge base is deliberately static and general: the agent has no real-time data, so it
 must never give departure times, availability or an exact price for a given trip.
 """
 
+import json
 import re
 import time
-from os import getenv
 from pathlib import Path
 
 from agno.agent import Agent
 from agno.knowledge import Knowledge
-from agno.knowledge.embedder.voyageai import VoyageAIEmbedder
+from agents.tools.embedder import make_embedder
+from agno.tools import tool
 from agno.vectordb.lancedb import LanceDb
 
+from agents.tools.static_geo import build_geo_block
 from app.settings import chat_model
 
 KB_FILE = Path(__file__).parent / "knowledge" / "louage_kb.md"
+STATIONS_FILE = Path(__file__).parent / "data" / "louage_stations.json"
 VECTOR_DB_URI = Path(__file__).resolve().parents[2] / "tmp" / "lancedb"
 
 louage_knowledge = Knowledge(
@@ -34,8 +37,7 @@ louage_knowledge = Knowledge(
     vector_db=LanceDb(
         uri=str(VECTOR_DB_URI),
         table_name="louage_kb",
-        # voyage-4-lite returns 1024-dim vectors by default; `dimensions` must match for the LanceDb schema.
-        embedder=VoyageAIEmbedder(id="voyage-4-lite", dimensions=1024, api_key=getenv("VOYAGE_API_KEY")),
+        embedder=make_embedder(),
     ),
     max_results=3,
 )
@@ -48,10 +50,7 @@ def load_louage_knowledge(delay_seconds: float = 0) -> int:
     delete the tmp/lancedb/louage_kb.lance table to rebuild it from scratch.
 
     Args:
-        delay_seconds: pause before each embedding call after the first. Each section costs
-            one Voyage request; the free tier without a payment method allows 3 requests/minute,
-            so pass ~21 there. A section that fails to embed is only logged by agno, not raised,
-            and is simply retried on the next call.
+        delay_seconds: pause before each embedding call after the first (0 for local embeddings).
 
     Returns:
         Number of sections sent for embedding (0 when everything was already indexed).
@@ -76,6 +75,40 @@ def load_louage_knowledge(delay_seconds: float = 0) -> int:
     return embedded
 
 
+@tool
+def search_louage_stations(query: str = "") -> str:
+    """Search the curated reference table of known Tunisian louage stations and their destinations.
+
+    This is a small, hand-maintained, version-controlled reference list (station name, zone, city,
+    coordinates, and known destination cities with indicative fare ranges) — separate from the
+    knowledge base text, and separate from the naming restriction in instruction rule 3a: station
+    and destination names returned by THIS tool can be cited freely.
+
+    Use it whenever the user asks which station to go to, wants a list of stations, or asks about a
+    specific destination (e.g. "quelle station pour Sousse ?", "stations de louage à Tunis").
+
+    Args:
+        query: Optional filter on station name, zone, city, or a destination city (e.g. "Sousse",
+            "Bab Saadoun"). Leave empty to list every known station.
+
+    Returns:
+        The matching stations, followed by the exact ```geo block to copy verbatim at the end of
+        the answer.
+    """
+    stations: list[dict] = json.loads(STATIONS_FILE.read_text(encoding="utf-8"))
+    if query:
+        q = query.strip().lower()
+        stations = [
+            s
+            for s in stations
+            if q in s["name"].lower()
+            or q in s["zone"].lower()
+            or q in s["ville"].lower()
+            or any(q in d["to"].lower() for d in s["destinations"])
+        ] or stations
+    return build_geo_block(stations, "louage")
+
+
 INSTRUCTIONS = """\
 Tu es un assistant spécialisé dans le louage en Tunisie : fonctionnement du système, stations, tarifs indicatifs,
 comparaison avec le bus et le train, conseils pratiques pour les passagers.
@@ -86,6 +119,7 @@ Règles :
    connaissances avant de répondre.
 2. Réponds uniquement à partir des informations trouvées. N'invente jamais d'horaire, de prix, de durée de trajet,
    d'adresse, d'emplacement de station, de numéro de téléphone ou de ligne.
+   Seule exception : les stations renvoyées par l'outil search_louage_stations (règle 9) peuvent être nommées.
 3. Noms d'organismes, liens et informations absentes — règle absolue, sans aucune exception :
    a. N'écris JAMAIS le nom (ni le sigle) d'un organisme, société, service, instance, autorité, ministère, commission,
       association ou tribunal qui n'apparaît pas mot pour mot dans le texte retourné par search_knowledge_base pour
@@ -130,6 +164,13 @@ Règles :
 8. Langue : réponds en français par défaut, en vouvoyant l'utilisateur. Si l'utilisateur écrit en dialecte tunisien
    (derja), en caractères arabes ou latins (arabizi, ex. « famma louage l Sousse tawa ? »), réponds en derja tunisien
    dans le même système d'écriture.
+9. Repérage de stations sur carte — outil search_louage_stations : dès que la question porte sur une station
+   précise, une destination, ou une demande de liste de stations, appelle TOUJOURS search_louage_stations (avec la
+   ville ou destination citée par l'utilisateur en filtre, ou vide pour tout lister) en plus de la base de
+   connaissances. Cite les stations et destinations exactement comme renvoyées par l'outil. Les tarifs et durées
+   qu'il renvoie portent déjà la mention « (à confirmer) » : garde-la. Si l'outil ne renvoie rien de pertinent,
+   dis-le simplement. Termine alors ta réponse par le bloc ```geo renvoyé par l'outil, recopié tel quel, sans
+   aucune modification, sans l'entourer d'autre texte après lui.
 """
 
 louage_agent = Agent(
@@ -139,6 +180,7 @@ louage_agent = Agent(
     model=chat_model(),
     knowledge=louage_knowledge,
     search_knowledge=True,
+    tools=[search_louage_stations],
     instructions=INSTRUCTIONS,
     markdown=True,
 )

@@ -13,7 +13,7 @@ AgentOS  (app/main.py)  — SqliteDb (db/sessions.db)
 └── Master Orchestrator  (agents/orchestrator.py)            — Team, routes to a hub
     ├── Admin & Utilities Hub    (agents/hubs.py)             — bureaucratie_agent, steg_agent
     ├── Mobility & City Hub      (agents/hubs.py)             — louage_agent, parking_agent, souk_agent
-    ├── Education & Work Hub     (agents/hubs.py)             — bac_agent, job_agent, kotob_agent
+    ├── Education & Work Hub     (agents/hubs.py)             — bac_agent, job_agent
     └── Housing & Community Hub  (agents/hubs.py)             — immobilier_agent, benevolat_agent
 ```
 

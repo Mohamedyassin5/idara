@@ -6,18 +6,17 @@ Hub: admin_utilities — démarches administratives tunisiennes (CIN, passeport,
 extrait de naissance, CNSS, carte grise, permis de conduire).
 
 RAG over agents/admin_utilities/knowledge/bureaucratie_kb.md, embedded into a
-local LanceDb table (tmp/lancedb) with Voyage AI embeddings. Call `load_bureaucratie_knowledge()` once
+local LanceDb table (tmp/lancedb) with local multilingual embeddings (fastembed). Call `load_bureaucratie_knowledge()` once
 before running the agent so the vector table is populated.
 """
 
 import re
 import time
-from os import getenv
 from pathlib import Path
 
 from agno.agent import Agent
 from agno.knowledge import Knowledge
-from agno.knowledge.embedder.voyageai import VoyageAIEmbedder
+from agents.tools.embedder import make_embedder
 from agno.vectordb.lancedb import LanceDb
 
 from agents.tools.municipality_api import lookup_municipality
@@ -32,8 +31,7 @@ bureaucratie_knowledge = Knowledge(
     vector_db=LanceDb(
         uri=str(VECTOR_DB_URI),
         table_name="bureaucratie_kb",
-        # voyage-4-lite returns 1024-dim vectors by default; `dimensions` must match for the LanceDb schema.
-        embedder=VoyageAIEmbedder(id="voyage-4-lite", dimensions=1024, api_key=getenv("VOYAGE_API_KEY")),
+        embedder=make_embedder(),
     ),
     max_results=3,
 )
@@ -46,10 +44,7 @@ def load_bureaucratie_knowledge(delay_seconds: float = 0) -> int:
     delete tmp/lancedb to rebuild the table from scratch.
 
     Args:
-        delay_seconds: pause before each embedding call after the first. Each section costs
-            one Voyage request; the free tier without a payment method allows 3 requests/minute,
-            so pass ~21 there. A section that fails to embed is only logged by agno, not raised,
-            and is simply retried on the next call.
+        delay_seconds: pause before each embedding call after the first (0 for local embeddings).
 
     Returns:
         Number of sections sent for embedding (0 when everything was already indexed).

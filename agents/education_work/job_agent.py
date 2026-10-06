@@ -6,7 +6,7 @@ Hub: education_work — recherche d'emploi et de stage en Tunisie : rédiger un 
 préparer un entretien, canaux de recherche, types de contrats, droits de base du salarié.
 
 RAG over agents/education_work/knowledge/job_kb.md, embedded into a local LanceDb
-table (tmp/lancedb, table "job_kb") with Voyage AI embeddings. Call `load_job_knowledge()`
+table (tmp/lancedb, table "job_kb") with local multilingual embeddings (fastembed). Call `load_job_knowledge()`
 once before running the agent so the vector table is populated.
 
 The knowledge base holds only stable, general information: no real job listings, no exact
@@ -16,15 +16,13 @@ The agent must never invent those.
 
 import re
 import time
-from os import getenv
 from pathlib import Path
 
 from agno.agent import Agent
 from agno.knowledge import Knowledge
-from agno.knowledge.embedder.voyageai import VoyageAIEmbedder
+from agents.tools.embedder import make_embedder
 from agno.vectordb.lancedb import LanceDb
 
-from agents.tools.tmaps_api import find_nearby_places
 from app.settings import chat_model
 
 KB_FILE = Path(__file__).parent / "knowledge" / "job_kb.md"
@@ -36,8 +34,7 @@ job_knowledge = Knowledge(
     vector_db=LanceDb(
         uri=str(VECTOR_DB_URI),
         table_name="job_kb",
-        # voyage-4-lite returns 1024-dim vectors by default; `dimensions` must match for the LanceDb schema.
-        embedder=VoyageAIEmbedder(id="voyage-4-lite", dimensions=1024, api_key=getenv("VOYAGE_API_KEY")),
+        embedder=make_embedder(),
     ),
     max_results=3,
 )
@@ -50,10 +47,7 @@ def load_job_knowledge(delay_seconds: float = 0) -> int:
     delete the tmp/lancedb/job_kb.lance table to rebuild it from scratch.
 
     Args:
-        delay_seconds: pause before each embedding call after the first. Each section costs
-            one Voyage request; the free tier without a payment method allows 3 requests/minute,
-            so pass ~21 there. A section that fails to embed is only logged by agno, not raised,
-            and is simply retried on the next call.
+        delay_seconds: pause before each embedding call after the first (0 for local embeddings).
 
     Returns:
         Number of sections sent for embedding (0 when everything was already indexed).
@@ -88,7 +82,6 @@ Règles :
    d'abord dans ta base de connaissances avant de répondre.
 2. Réponds uniquement à partir des informations trouvées. N'invente jamais d'offre d'emploi, de montant de
    salaire, de durée légale, de nom d'entreprise, de statistique ni de barème.
-   Seule exception : les commerces renvoyés par l'outil find_nearby_places (règle 8) peuvent être nommés.
 3. Noms d'organismes, liens et informations absentes — règle absolue, sans aucune exception :
    a. N'écris JAMAIS le nom (ni le sigle) d'un organisme, service, ministère, plateforme, association ou
       autorité qui n'apparaît pas mot pour mot dans le texte retourné par search_knowledge_base pour CETTE
@@ -132,19 +125,6 @@ Règles :
    tunisien (derja), en caractères arabes ou latins (arabizi, ex. « kifech nekteb CV ? »), réponds en derja
    tunisien dans le même système d'écriture, en gardant les termes officiels (CDI, CDD, SMIG, ANETI)
    compréhensibles.
-8. Repérage de commerces pour candidatures spontanées — outil find_nearby_places : si l'utilisateur demande de
-   repérer des commerces ou entreprises physiques dans un secteur ou un quartier, et qu'il fournit des
-   coordonnées (latitude/longitude), utilise cet outil (catégories utiles : shopping, bank, cafe, restaurant,
-   hotel…). N'invente jamais de coordonnées : sans coordonnées fournies, demande-les à l'utilisateur. Ne cite
-   que les lieux renvoyés par l'outil. Précise TOUJOURS dans ta réponse que ce sont des commerces repérés
-   localement grâce à une carte, et NON des offres d'emploi confirmées ni des entreprises qui recrutent ;
-   recommande de vérifier sur place ou de contacter directement l'établissement. Si l'outil ne trouve rien avec une
-   catégorie, relance-le une fois sans catégorie (la couverture des catégories est partielle) et ne retiens que
-   les commerces ou établissements pertinents pour une candidature (écarte les associations, fondations,
-   écoles et institutions publiques). Pour chaque lieu, reprends tel quel le nom et la catégorie renvoyés par
-   l'outil : ne déduis jamais un type de commerce (librairie, boulangerie, magasin de sport…) à partir du nom
-   et n'invente aucune adresse, horaire ni téléphone absent du résultat. Si l'outil renvoie une
-   erreur, dis-le simplement et n'invente aucun résultat. Les autres règles (notamment la 3) restent valables.
 """
 
 job_agent = Agent(
@@ -154,7 +134,6 @@ job_agent = Agent(
     model=chat_model(),
     knowledge=job_knowledge,
     search_knowledge=True,
-    tools=[find_nearby_places],
     instructions=INSTRUCTIONS,
     markdown=True,
 )

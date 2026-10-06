@@ -6,7 +6,7 @@ Hub: housing_community — immobilier et logement en Tunisie : recherche de loca
 contrat de bail, frais habituels, détection des arnaques, documents nécessaires.
 
 RAG over agents/housing_community/knowledge/immobilier_kb.md, embedded into a local LanceDb
-table (tmp/lancedb, table "immobilier_kb") with Voyage AI embeddings. Call
+table (tmp/lancedb, table "immobilier_kb") with local multilingual embeddings (fastembed). Call
 `load_immobilier_knowledge()` once before running the agent so the vector table is populated.
 
 The knowledge base is intentionally static and general: the agent has no real-time listings or
@@ -15,20 +15,23 @@ property availability. For geographic location (governorate, delegation, postal 
 the `lookup_municipality` tool.
 """
 
+import json
 import re
 import time
-from os import getenv
 from pathlib import Path
 
 from agno.agent import Agent
 from agno.knowledge import Knowledge
-from agno.knowledge.embedder.voyageai import VoyageAIEmbedder
+from agents.tools.embedder import make_embedder
+from agno.tools import tool
 from agno.vectordb.lancedb import LanceDb
 
 from agents.tools.municipality_api import lookup_municipality
+from agents.tools.static_geo import build_geo_block
 from app.settings import chat_model
 
 KB_FILE = Path(__file__).parent / "knowledge" / "immobilier_kb.md"
+QUARTIERS_FILE = Path(__file__).parent / "data" / "immobilier_quartiers.json"
 VECTOR_DB_URI = Path(__file__).resolve().parents[2] / "tmp" / "lancedb"
 
 immobilier_knowledge = Knowledge(
@@ -37,8 +40,7 @@ immobilier_knowledge = Knowledge(
     vector_db=LanceDb(
         uri=str(VECTOR_DB_URI),
         table_name="immobilier_kb",
-        # voyage-4-lite returns 1024-dim vectors by default; `dimensions` must match for the LanceDb schema.
-        embedder=VoyageAIEmbedder(id="voyage-4-lite", dimensions=1024, api_key=getenv("VOYAGE_API_KEY")),
+        embedder=make_embedder(),
     ),
     max_results=3,
 )
@@ -51,10 +53,7 @@ def load_immobilier_knowledge(delay_seconds: float = 0) -> int:
     delete the tmp/lancedb/immobilier_kb.lance table to rebuild it from scratch.
 
     Args:
-        delay_seconds: pause before each embedding call after the first. Each section costs
-            one Voyage request; the free tier without a payment method allows 3 requests/minute,
-            so pass ~21 there. A section that fails to embed is only logged by agno, not raised,
-            and is simply retried on the next call.
+        delay_seconds: pause before each embedding call after the first (0 for local embeddings).
 
     Returns:
         Number of sections sent for embedding (0 when everything was already indexed).
@@ -79,6 +78,35 @@ def load_immobilier_knowledge(delay_seconds: float = 0) -> int:
     return embedded
 
 
+@tool
+def search_immobilier_quartiers(query: str = "") -> str:
+    """Search the curated reference table of indicative rent ranges by Tunisian neighbourhood.
+
+    This is a small, hand-maintained, version-controlled reference table (neighbourhood, city,
+    coordinates, dominant housing type, and an indicative monthly rent range for a standard F3) —
+    NOT a live listing and NOT today's market price. It is a general, non-contractual estimate,
+    distinct from the "no exact rent figure" restriction in instruction rule 4a, which targets a
+    specific listing's price today: a broad indicative range from this static table can be given.
+
+    Use it when the user asks how expensive a neighbourhood or city roughly is, or wants to compare
+    a few areas before searching for listings (e.g. "loyer moyen à l'Ariana", "quel quartier est le
+    moins cher pour louer à Tunis ?").
+
+    Args:
+        query: Optional filter on neighbourhood or city name (e.g. "Ariana", "Sousse"). Leave empty
+            to list every known neighbourhood.
+
+    Returns:
+        The matching neighbourhoods, followed by the exact ```geo block to copy verbatim at the end
+        of the answer.
+    """
+    quartiers: list[dict] = json.loads(QUARTIERS_FILE.read_text(encoding="utf-8"))
+    if query:
+        q = query.strip().lower()
+        quartiers = [z for z in quartiers if q in z["quartier"].lower() or q in z["ville"].lower()] or quartiers
+    return build_geo_block(quartiers, "immobilier")
+
+
 INSTRUCTIONS = """\
 Tu es un assistant spécialisé dans l'immobilier et le logement en Tunisie : recherche de location ou d'achat,
 éléments essentiels du contrat de location, frais habituels, détection des arnaques et fausses annonces,
@@ -92,6 +120,8 @@ Règles :
    géographique qui relèvent de l'outil lookup_municipality (voir règle 8).
 2. Réponds uniquement à partir des informations trouvées. N'invente jamais d'annonce immobilière, de bien disponible,
    de loyer chiffré, de prix au mètre carré, d'adresse précise, de numéro de téléphone ou de nom de propriétaire.
+   Seule exception : les fourchettes de loyer par quartier renvoyées par l'outil search_immobilier_quartiers
+   (règle 8c) peuvent être citées, car ce sont des estimations générales et non des annonces.
 3. Noms d'organismes, liens et informations absentes — règle absolue, sans aucune exception :
    a. N'écris JAMAIS le nom (ni le sigle) d'une agence immobilière, d'un promoteur, d'un site web, d'une plateforme
       d'annonces, d'un service ou d'un organisme qui n'apparaît pas mot pour mot dans le texte retourné par
@@ -135,7 +165,7 @@ Règles :
    - **Précautions** : signaux d'arnaques ou points d'attention essentiels
    - **Ce que je ne peux pas savoir** : pour toute question de disponibilité immédiate ou de prix du marché actuel (règle 4)
    - **À savoir** : remarques présentes dans la base de connaissances (optionnel). N'y ajoute aucun détail inventé.
-8. Localisation géographique et langue :
+8. Localisation géographique, loyers indicatifs et langue :
    a. Localisation — utilise l'outil `lookup_municipality` : quand une question porte sur la localisation exacte d'une zone,
       d'un quartier, d'une ville ou d'une localité (quel gouvernorat, quelle délégation, quel code postal, ex. « Dans quel
       gouvernorat se trouve La Marsa ? »), appelle TOUJOURS l'outil lookup_municipality plutôt que d'inventer ou de chercher
@@ -143,6 +173,12 @@ Règles :
    b. Langue : réponds en français par défaut, en vouvoyant l'utilisateur. Si l'utilisateur écrit en dialecte tunisien
       (derja), en caractères arabes ou latins (arabizi, ex. « nlawej 3la dar l kre f Sousse »), réponds en derja tunisien
       dans le même système d'écriture.
+   c. Loyers indicatifs par quartier — outil `search_immobilier_quartiers` : quand la question porte sur le niveau de
+      loyer d'un quartier ou d'une ville, ou sur une comparaison entre quartiers, appelle cet outil (avec le nom cité en
+      filtre, ou vide pour tout lister). Précise TOUJOURS qu'il s'agit d'une estimation générale et non contractuelle
+      pour un F3 standard, à vérifier auprès d'une agence ou d'une annonce réelle — jamais le loyer d'un bien précis.
+      Termine alors ta réponse par le bloc ```geo renvoyé par l'outil, recopié tel quel, sans aucune modification,
+      sans l'entourer d'autre texte après lui.
 """
 
 immobilier_agent = Agent(
@@ -152,7 +188,7 @@ immobilier_agent = Agent(
     model=chat_model(),
     knowledge=immobilier_knowledge,
     search_knowledge=True,
-    tools=[lookup_municipality],
+    tools=[lookup_municipality, search_immobilier_quartiers],
     instructions=INSTRUCTIONS,
     markdown=True,
 )

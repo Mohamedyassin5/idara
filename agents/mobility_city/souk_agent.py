@@ -6,7 +6,7 @@ Hub: mobility_city — souks et marchés en Tunisie : types de marchés, déroul
 marchandage, facteurs de prix, comparaison avec la grande surface, conseils pratiques.
 
 RAG over agents/mobility_city/knowledge/souk_kb.md, embedded into a local LanceDb
-table (tmp/lancedb, table "souk_kb") with Voyage AI embeddings. Call `load_souk_knowledge()`
+table (tmp/lancedb, table "souk_kb") with local multilingual embeddings (fastembed). Call `load_souk_knowledge()`
 once before running the agent so the vector table is populated.
 
 The knowledge base is deliberately static and general: the agent has no real-time data, so it
@@ -15,14 +15,14 @@ must never give a price for a product, nor state that a product is available at 
 
 import re
 import time
-from os import getenv
 from pathlib import Path
 
 from agno.agent import Agent
 from agno.knowledge import Knowledge
-from agno.knowledge.embedder.voyageai import VoyageAIEmbedder
+from agents.tools.embedder import make_embedder
 from agno.vectordb.lancedb import LanceDb
 
+from agents.tools.tmaps_api import find_nearby_places
 from app.settings import chat_model
 
 KB_FILE = Path(__file__).parent / "knowledge" / "souk_kb.md"
@@ -34,8 +34,7 @@ souk_knowledge = Knowledge(
     vector_db=LanceDb(
         uri=str(VECTOR_DB_URI),
         table_name="souk_kb",
-        # voyage-4-lite returns 1024-dim vectors by default; `dimensions` must match for the LanceDb schema.
-        embedder=VoyageAIEmbedder(id="voyage-4-lite", dimensions=1024, api_key=getenv("VOYAGE_API_KEY")),
+        embedder=make_embedder(),
     ),
     max_results=3,
 )
@@ -48,10 +47,7 @@ def load_souk_knowledge(delay_seconds: float = 0) -> int:
     delete the tmp/lancedb/souk_kb.lance table to rebuild it from scratch.
 
     Args:
-        delay_seconds: pause before each embedding call after the first. Each section costs
-            one Voyage request; the free tier without a payment method allows 3 requests/minute,
-            so pass ~21 there. A section that fails to embed is only logged by agno, not raised,
-            and is simply retried on the next call.
+        delay_seconds: pause before each embedding call after the first (0 for local embeddings).
 
     Returns:
         Number of sections sent for embedding (0 when everything was already indexed).
@@ -86,6 +82,7 @@ Règles :
    base de connaissances avant de répondre.
 2. Réponds uniquement à partir des informations trouvées. N'invente jamais de prix, de jour de marché, d'horaire,
    d'adresse, de nom de marché, de marchand ni de produit disponible.
+   Seule exception : les marchés renvoyés par l'outil find_nearby_places (règle 9) peuvent être nommés.
 3. Noms d'organismes, liens et informations absentes — règle absolue, sans aucune exception :
    a. N'écris JAMAIS le nom (ni le sigle) d'un organisme, société, service, marché, souk, commerçant, application,
       instance, autorité, ministère, association ou tribunal qui n'apparaît pas mot pour mot dans le texte retourné
@@ -132,6 +129,15 @@ Règles :
 8. Langue : réponds en français par défaut, en vouvoyant l'utilisateur. Si l'utilisateur écrit en dialecte tunisien
    (derja), en caractères arabes ou latins (arabizi, ex. « b9adech el kilo mta3 tmatem fi souk ? »), réponds en derja
    tunisien dans le même système d'écriture.
+9. Repérage de marchés réels sur carte — outil find_nearby_places : si l'utilisateur demande où se trouve un souk,
+   un marché ou un commerce de proximité près d'un endroit précis et fournit des coordonnées (latitude/longitude),
+   appelle find_nearby_places avec categories="shopping" et geo_type="souk". N'invente jamais de coordonnées : sans
+   coordonnées fournies, demande-les à l'utilisateur. Ne cite que les lieux renvoyés par l'outil, avec leur nom
+   exact, et ne mentionne toujours AUCUN prix (règle 4a reste valable même ici). Rappelle toujours qu'il s'agit de
+   commerces repérés sur une carte, pas forcément des souks traditionnels, à vérifier sur place. Si l'outil ne
+   renvoie rien, dis-le simplement et retombe sur les règles générales (1 à 4) plutôt que d'inventer. Termine
+   alors ta réponse par le bloc ```geo renvoyé par l'outil, recopié tel quel, sans aucune modification, sans
+   l'entourer d'autre texte après lui.
 """
 
 souk_agent = Agent(
@@ -141,6 +147,7 @@ souk_agent = Agent(
     model=chat_model(),
     knowledge=souk_knowledge,
     search_knowledge=True,
+    tools=[find_nearby_places],
     instructions=INSTRUCTIONS,
     markdown=True,
 )

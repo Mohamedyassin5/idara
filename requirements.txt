@@ -30,7 +30,6 @@ fsspec==2026.9.0
 gitdb==4.0.12
 gitpython==3.1.50
 greenlet==3.5.6
-groq==1.7.0
 h11==0.16.0
 h2==4.3.0
 hf-xet==1.6.0
@@ -90,6 +89,8 @@ pygments==2.20.0
 pyjwt==2.12.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
+pypdf==6.19.0
+fastembed==0.8.1
 python-multipart==0.0.28
 pytz==2026.2
 pyyaml==6.0.3
@@ -120,7 +121,6 @@ urllib3==2.7.0
 uuid-utils==0.17.1
 uvicorn==0.47.0
 uvloop==0.22.1
-voyageai==0.5.0
 watchfiles==1.1.1
 websockets==16.0
 wrapt==2.1.2

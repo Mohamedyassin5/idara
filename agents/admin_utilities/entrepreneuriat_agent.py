@@ -7,18 +7,17 @@ activité en Tunisie : formes juridiques, étapes d'enregistrement (RNE, matricu
 documents nécessaires et sensibilisation aux autorisations sectorielles.
 
 RAG over agents/admin_utilities/knowledge/entrepreneuriat_kb.md, embedded into a local LanceDb
-table (tmp/lancedb, table "entrepreneuriat_kb") with Voyage AI embeddings. Call
+table (tmp/lancedb, table "entrepreneuriat_kb") with local multilingual embeddings (fastembed). Call
 `load_entrepreneuriat_knowledge()` once before running the agent so the vector table is populated.
 """
 
 import re
 import time
-from os import getenv
 from pathlib import Path
 
 from agno.agent import Agent
 from agno.knowledge import Knowledge
-from agno.knowledge.embedder.voyageai import VoyageAIEmbedder
+from agents.tools.embedder import make_embedder
 from agno.vectordb.lancedb import LanceDb
 
 from app.settings import chat_model
@@ -32,8 +31,7 @@ entrepreneuriat_knowledge = Knowledge(
     vector_db=LanceDb(
         uri=str(VECTOR_DB_URI),
         table_name="entrepreneuriat_kb",
-        # voyage-4-lite returns 1024-dim vectors by default; `dimensions` must match for the LanceDb schema.
-        embedder=VoyageAIEmbedder(id="voyage-4-lite", dimensions=1024, api_key=getenv("VOYAGE_API_KEY")),
+        embedder=make_embedder(),
     ),
     max_results=3,
 )
@@ -46,10 +44,7 @@ def load_entrepreneuriat_knowledge(delay_seconds: float = 0) -> int:
     delete the tmp/lancedb/entrepreneuriat_kb.lance table to rebuild it from scratch.
 
     Args:
-        delay_seconds: pause before each embedding call after the first. Each section costs
-            one Voyage request; the free tier without a payment method allows 3 requests/minute,
-            so pass ~21 there. A section that fails to embed is only logged by agno, not raised,
-            and is simply retried on the next call.
+        delay_seconds: pause before each embedding call after the first (0 for local embeddings).
 
     Returns:
         Number of sections sent for embedding (0 when everything was already indexed).

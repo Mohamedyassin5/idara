@@ -1,0 +1,66 @@
+[
+  {
+    "id": "tunis-moncef-bey",
+    "name": "Station Moncef Bey",
+    "zone": "Sud/Est",
+    "ville": "Tunis",
+    "lat": 36.7936,
+    "lng": 10.1875,
+    "destinations": [
+      { "to": "Sousse", "tarif_indicatif": "9 à 11 DT (à confirmer)", "duree_indicative": "2h à 2h30" },
+      { "to": "Sfax", "tarif_indicatif": "14 à 17 DT (à confirmer)", "duree_indicative": "3h30 à 4h" },
+      { "to": "Nabeul", "tarif_indicatif": "5 à 7 DT (à confirmer)", "duree_indicative": "1h à 1h30" }
+    ]
+  },
+  {
+    "id": "tunis-bab-saadoun",
+    "name": "Station Bab Saadoun",
+    "zone": "Nord/Ouest",
+    "ville": "Tunis",
+    "lat": 36.8103,
+    "lng": 10.1591,
+    "destinations": [
+      { "to": "Bizerte", "tarif_indicatif": "5 à 7 DT (à confirmer)", "duree_indicative": "1h à 1h15" },
+      { "to": "Béja", "tarif_indicatif": "6 à 8 DT (à confirmer)", "duree_indicative": "1h30 à 2h" },
+      { "to": "Le Kef", "tarif_indicatif": "10 à 12 DT (à confirmer)", "duree_indicative": "2h30 à 3h" }
+    ]
+  },
+  {
+    "id": "tunis-bab-fellah",
+    "name": "Station Bab El Fellah",
+    "zone": "Petites distances / banlieue sud",
+    "ville": "Tunis",
+    "lat": 36.7845,
+    "lng": 10.1745,
+    "destinations": [
+      { "to": "Ben Arous", "tarif_indicatif": "1 à 2 DT (à confirmer)", "duree_indicative": "20 à 30 min" },
+      { "to": "Rades", "tarif_indicatif": "1 à 2 DT (à confirmer)", "duree_indicative": "20 à 30 min" }
+    ]
+  },
+  {
+    "id": "sousse-gare-louage",
+    "name": "Station louage Sousse",
+    "zone": "Centre-ville",
+    "ville": "Sousse",
+    "lat": 35.8175,
+    "lng": 10.6367,
+    "destinations": [
+      { "to": "Tunis", "tarif_indicatif": "9 à 11 DT (à confirmer)", "duree_indicative": "2h à 2h30" },
+      { "to": "Sfax", "tarif_indicatif": "7 à 9 DT (à confirmer)", "duree_indicative": "1h30 à 2h" },
+      { "to": "Kairouan", "tarif_indicatif": "4 à 6 DT (à confirmer)", "duree_indicative": "1h à 1h15" }
+    ]
+  },
+  {
+    "id": "sfax-gare-louage",
+    "name": "Station louage Sfax",
+    "zone": "Centre-ville",
+    "ville": "Sfax",
+    "lat": 34.7478,
+    "lng": 10.7661,
+    "destinations": [
+      { "to": "Tunis", "tarif_indicatif": "14 à 17 DT (à confirmer)", "duree_indicative": "3h30 à 4h" },
+      { "to": "Sousse", "tarif_indicatif": "7 à 9 DT (à confirmer)", "duree_indicative": "1h30 à 2h" },
+      { "to": "Gabès", "tarif_indicatif": "6 à 8 DT (à confirmer)", "duree_indicative": "1h15 à 1h30" }
+    ]
+  }
+]

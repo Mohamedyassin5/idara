@@ -33,7 +33,7 @@ JWT_ALGORITHM = "HS256"
 TOKEN_TTL = timedelta(hours=int(getenv("AUTH_TOKEN_HOURS", "12")))
 
 # Paths that need a valid token. Everything else (docs, health, /auth/*) stays public.
-PROTECTED_PREFIXES = ("/teams", "/agents", "/workflows", "/sessions", "/memory")
+PROTECTED_PREFIXES = ("/teams", "/agents", "/workflows", "/sessions", "/memory", "/cv", "/jobs")
 
 
 def _secret() -> str:
