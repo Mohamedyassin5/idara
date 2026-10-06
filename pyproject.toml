@@ -11,11 +11,13 @@ dependencies = [
   "agno[os,slack]",
   "aiohttp",
   "fastapi[standard]",
+  "fastembed",
   "lancedb",
   "mcp",
   "openai",
   "parallel-web",
   "pgvector",
+  "pypdf",
   "psycopg[binary]",
   "sqlalchemy",
 ]
