@@ -28,6 +28,7 @@ from agents.housing_community.immobilier_agent import load_immobilier_knowledge 
 from agents.mobility_city.souk_agent import load_souk_knowledge  # noqa: E402
 from agents.orchestrator import master_orchestrator  # noqa: E402
 from app.auth import auth_middleware, router as auth_router  # noqa: E402
+from app.chat import router as chat_router  # noqa: E402
 from app.cv import router as cv_router  # noqa: E402
 from app.jobs import router as jobs_router  # noqa: E402
 from db import get_db  # noqa: E402
@@ -125,6 +126,7 @@ agent_os = AgentOS(
 app = agent_os.get_app()
 app.include_router(auth_router)
 app.include_router(cv_router)
+app.include_router(chat_router)
 app.include_router(jobs_router)
 app.middleware("http")(auth_middleware)
 
