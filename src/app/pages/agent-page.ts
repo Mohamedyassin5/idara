@@ -298,7 +298,7 @@ export class AgentPage {
     this.draft.set('');
     this.loading.set(true);
 
-    this.chat.ask(this.withDomainHint(a, question), conv.session).subscribe({
+    this.chat.ask(question, conv.session, a.backendId).subscribe({
       next: (ans) => {
         conv.messages.update((list) => [...list, { role: 'assistant', text: ans.content, agentId: ans.agentId, geo: ans.geo }]);
         this.loading.set(false);
@@ -327,7 +327,7 @@ export class AgentPage {
 
   protected openConversation(sessionId: string): void {
     const conv = this.conv();
-    this.chat.loadSession(sessionId).subscribe((messages) => {
+    this.chat.loadSession(sessionId, this.key()).subscribe((messages) => {
       conv.session = sessionId;
       conv.messages.set(messages);
       this.activeId.set(sessionId);
@@ -389,13 +389,5 @@ export class AgentPage {
 
   private isCoordinate(v: string): boolean {
     return v.trim() !== '' && Number.isFinite(Number(v));
-  }
-
-  /**
-   * Only the Master Orchestrator is exposed by the backend, so a domain page cannot call its agent directly.
-   * A short bracketed hint nudges the routing toward this page's domain; the user's visible message stays clean.
-   */
-  private withDomainHint(a: AgentConfig, question: string): string {
-    return a.slug === 'assistant' ? question : `[Domaine : ${a.name.fr}] ${question}`;
   }
 }

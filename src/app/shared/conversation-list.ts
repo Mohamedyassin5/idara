@@ -167,7 +167,7 @@ export class ConversationList {
 
   protected remove(s: SessionSummary): void {
     if (!window.confirm(this.i18n.t('convDeleteConfirm'))) return;
-    this.chat.deleteSession(s.session_id).subscribe(() => this.load(this.domain()));
+    this.chat.deleteSession(s.session_id, this.domain()).subscribe(() => this.load(this.domain()));
   }
 
   private setFlags(s: SessionSummary, flags: { pinned: boolean; archived: boolean }): void {

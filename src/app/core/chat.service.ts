@@ -36,6 +36,7 @@ export interface SessionSummary {
 }
 
 const SESSIONS_URL = '/api/sessions';
+const CHAT_URL = '/api/chat';
 const DOMAIN_PREFIX = /^\[Domaine : [^\]]*\]\s*/;
 
 /** Pulls the agent's ```geo payload out of its markdown answer, so it renders as a map, not raw JSON text. */
@@ -100,7 +101,7 @@ export class ChatService {
 
   /** Saved conversations of one domain, newest first. */
   listSessions(domain: string): Observable<SessionSummary[]> {
-    return this.http.get<{ data: SessionSummary[] }>(SESSIONS_URL, { params: this.sessionParams().set('limit', '100') }).pipe(
+    return this.http.get<{ data: SessionSummary[] }>(SESSIONS_URL, { params: this.sessionParams(domain).set('limit', '100') }).pipe(
       map((res) => res.data.filter((s) => s.metadata?.domain === domain)),
     );
   }
@@ -110,26 +111,26 @@ export class ChatService {
     return this.http.patch(`${SESSIONS_URL}/${encodeURIComponent(sessionId)}`, {
       session_name: title.slice(0, 80),
       metadata: { domain, pinned: false, archived: false },
-    }, { params: this.sessionParams() });
+    }, { params: this.sessionParams(domain) });
   }
 
   /** Writes the full metadata (pinned/archived) of a saved conversation. */
   updateFlags(sessionId: string, domain: string, flags: { pinned: boolean; archived: boolean }): Observable<unknown> {
     return this.http.patch(`${SESSIONS_URL}/${encodeURIComponent(sessionId)}`, { metadata: { domain, ...flags } }, {
-      params: this.sessionParams(),
+      params: this.sessionParams(domain),
     });
   }
 
-  deleteSession(sessionId: string): Observable<unknown> {
-    return this.http.delete(`${SESSIONS_URL}/${encodeURIComponent(sessionId)}`, { params: this.sessionParams() });
+  deleteSession(sessionId: string, domain: string): Observable<unknown> {
+    return this.http.delete(`${SESSIONS_URL}/${encodeURIComponent(sessionId)}`, { params: this.sessionParams(domain) });
   }
 
   /** Rebuilds a saved conversation's messages from its top-level runs (question + answer). */
-  loadSession(sessionId: string): Observable<ChatMessage[]> {
+  loadSession(sessionId: string, domain: string): Observable<ChatMessage[]> {
     return this.http
       .get<{ parent_run_id?: string | null; run_input?: string | null; content?: string | null }[]>(
         `${SESSIONS_URL}/${encodeURIComponent(sessionId)}/runs`,
-        { params: this.sessionParams() },
+        { params: this.sessionParams(domain) },
       )
       .pipe(
         map((runs) =>
@@ -147,17 +148,33 @@ export class ChatService {
       );
   }
 
-  private sessionParams(): HttpParams {
-    return new HttpParams().set('type', 'team').set('component_id', 'master-orchestrator').set('user_id', this.userId);
+  private sessionParams(domain: string): HttpParams {
+    const base = new HttpParams().set('user_id', this.userId);
+    return domain === 'assistant' ? base.set('type', 'team').set('component_id', 'master-orchestrator') : base.set('type', 'agent');
   }
 
-  ask(message: string, sessionId: string): Observable<Answer> {
+  /** Domain pages talk to their agent directly (no orchestrator/hub hops); the assistant page routes freely. */
+  ask(message: string, sessionId: string, agentId = ''): Observable<Answer> {
     const body = new FormData();
     body.set('message', message);
-    body.set('stream', 'false');
     body.set('session_id', sessionId);
     body.set('user_id', this.userId);
 
+    const toError = (err: { status?: number }) =>
+      throwError(() => new ChatError(err?.status === 0 || err?.status === 502 || err?.status === 504 ? 'backend' : 'generic'));
+
+    if (agentId) {
+      return this.http.post<{ content: string; agent_id: string }>(`${CHAT_URL}/${encodeURIComponent(agentId)}/run`, body).pipe(
+        timeout(REQUEST_TIMEOUT_MS),
+        map((res) => {
+          const { text, geo } = parseAnswer(res.content ?? '');
+          return { content: text, agentId: res.agent_id, path: [res.agent_id], geo };
+        }),
+        catchError(toError),
+      );
+    }
+
+    body.set('stream', 'false');
     return this.http.post<RunNode>(RUNS_URL, body).pipe(
       timeout(REQUEST_TIMEOUT_MS),
       map((run) => {
@@ -168,11 +185,10 @@ export class ChatService {
         const single = paths.length === 1 ? paths[0] : null;
         return { content: text, agentId: single ? single[single.length - 1] : null, path: single ?? [], geo };
       }),
-      catchError((err) =>
-        throwError(() => new ChatError(err?.status === 0 || err?.status === 502 || err?.status === 504 ? 'backend' : 'generic')),
-      ),
+      catchError(toError),
     );
   }
+
 
   private newSession(): string {
     return `web-${crypto.randomUUID()}`;
