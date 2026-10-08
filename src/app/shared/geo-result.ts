@@ -1,4 +1,5 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, computed, effect, input, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 import * as L from 'leaflet';
 import { GeoPayload } from '../core/chat.service';
 
@@ -508,6 +509,7 @@ export class GeoResult implements AfterViewInit, OnDestroy {
   readonly payload = input.required<GeoPayload>();
   readonly accent = input<string>('#5b9bea');
 
+  private readonly sanitizer = inject(DomSanitizer);
   private readonly mapHost = viewChild.required<ElementRef<HTMLElement>>('mapHost');
   protected readonly selected = signal<string | null>(null);
   protected readonly sortMode = signal<string>('');
@@ -529,9 +531,12 @@ export class GeoResult implements AfterViewInit, OnDestroy {
   });
 
   protected readonly kind = computed(() => KIND[this.payload().type] ?? { label: '', plural: 'résultats', glyph: '' });
-  protected readonly glyph = computed(
+  private readonly glyphSvg = computed(
     () => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${this.kind().glyph}</svg>`,
   );
+
+  /** The icon as trusted markup for the template: Angular's sanitizer would otherwise strip the <svg> (static, local data). */
+  protected readonly glyph = computed(() => this.sanitizer.bypassSecurityTrustHtml(this.glyphSvg()));
 
   constructor() {
     // A freshly answered question is a new payload object even for the same agent: reset to that type's default sort.
@@ -617,7 +622,7 @@ export class GeoResult implements AfterViewInit, OnDestroy {
     this.markers.clear();
 
     const type = this.payload().type;
-    const inner = type === 'parking' ? '<span class="geo-pin-p">P</span>' : `<span class="glyph">${this.glyph()}</span>`;
+    const inner = type === 'parking' ? '<span class="geo-pin-p">P</span>' : `<span class="glyph">${this.glyphSvg()}</span>`;
     const icon = L.divIcon({
       className: '',
       html: `<span class="geo-pin" style="--accent:${this.accent()}">${inner}</span>`,

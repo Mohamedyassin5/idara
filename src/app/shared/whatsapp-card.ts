@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { toString as qrToString } from 'qrcode';
 import { I18n } from '../core/i18n';
 
@@ -77,7 +78,8 @@ export class WhatsappCard {
   private readonly http = inject(HttpClient);
 
   private readonly number = signal('');
-  protected readonly qr = signal('');
+  private readonly sanitizer = inject(DomSanitizer);
+  protected readonly qr = signal<SafeHtml | null>(null);
 
   protected readonly link = computed(() => {
     const number = this.number();
@@ -95,11 +97,12 @@ export class WhatsappCard {
     effect(() => {
       const href = this.link();
       if (!href) {
-        this.qr.set('');
+        this.qr.set(null);
         return;
       }
       qrToString(href, { type: 'svg', margin: 0, errorCorrectionLevel: 'M', color: { dark: '#000000', light: '#ffffff' } }).then(
-        (svg) => this.qr.set(svg),
+        // Trusted: the markup is generated locally from our own wa.me link, never from user input.
+        (svg) => this.qr.set(this.sanitizer.bypassSecurityTrustHtml(svg)),
       );
     });
   }
