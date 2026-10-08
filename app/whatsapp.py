@@ -260,7 +260,7 @@ def _valid_signature(raw: bytes, header: str | None) -> bool:
 
 
 @router.get("/diagnostics")
-async def diagnostics(token: str = "", waba: str = "", subscribe: bool = False) -> dict:
+async def diagnostics(request: Request, token: str = "", waba: str = "", subscribe: bool = False, app: str = "", register: bool = False) -> dict:
     """Recent bot activity and whether Meta accepts the access token. Protected by the verify token."""
     expected = getenv("WHATSAPP_VERIFY_TOKEN")
     if not expected or not hmac.compare_digest(token, expected):
@@ -288,6 +288,25 @@ async def diagnostics(token: str = "", waba: str = "", subscribe: bool = False) 
             meta["subscribed_apps"] = listed.json().get("data", listed.json().get("error", {}).get("message", ""))
         except httpx.HTTPError as exc:
             meta["subscribed_apps"] = f"unreachable: {type(exc).__name__}"
+    secret = getenv("WHATSAPP_APP_SECRET")
+    if secret and re.fullmatch(r"\d{5,25}", app):
+        # The app's own webhook registration (callback URL and subscribed fields), read with the app token.
+        app_token = {"access_token": f"{app}|{secret}"}
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                if register:
+                    callback = f"https://{request.headers.get('host', '')}/whatsapp/webhook"
+                    done = await client.post(
+                        f"{GRAPH_URL}/{app}/subscriptions",
+                        params={**app_token, "object": "whatsapp_business_account", "callback_url": callback, "verify_token": expected, "fields": "messages"},
+                    )
+                    meta["register_status"] = done.status_code
+                    meta["register_result"] = done.json()
+                listed = await client.get(f"{GRAPH_URL}/{app}/subscriptions", params=app_token)
+            body = listed.json()
+            meta["app_subscriptions"] = body.get("data", body.get("error", {}).get("message", ""))
+        except httpx.HTTPError as exc:
+            meta["app_subscriptions"] = f"unreachable: {type(exc).__name__}"
     return {"meta": meta, "events": list(_events)}
 
 
