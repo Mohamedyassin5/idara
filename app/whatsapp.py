@@ -247,6 +247,12 @@ def _valid_signature(raw: bytes, header: str | None) -> bool:
     return hmac.compare_digest(expected, header.removeprefix("sha256="))
 
 
+@router.get("/info")
+async def info() -> dict:
+    """Public: the bot's number (digits only, international format) so the website can show a wa.me QR code."""
+    return {"number": re.sub(r"\D", "", getenv("WHATSAPP_PUBLIC_NUMBER", ""))}
+
+
 @router.get("/webhook")
 async def verify(request: Request) -> Response:
     params = request.query_params

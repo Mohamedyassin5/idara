@@ -121,6 +121,8 @@ def message(mid: str, **fields: object) -> dict:
     return {"entry": [{"changes": [{"value": {"messages": [{"id": mid, "from": "216333", **fields}]}}]}]}
 
 
+os.environ["WHATSAPP_PUBLIC_NUMBER"] = "+1 (555) 123-4567"
+check("public number is digits only", client.get("/whatsapp/info").json() == {"number": "15551234567"})
 r = client.get("/whatsapp/webhook", params={"hub.mode": "subscribe", "hub.verify_token": "verify-me", "hub.challenge": "42"})
 check("verification handshake", r.status_code == 200 and r.text == "42")
 check("wrong verify token", client.get("/whatsapp/webhook", params={"hub.mode": "subscribe", "hub.verify_token": "nope", "hub.challenge": "1"}).status_code == 403)
