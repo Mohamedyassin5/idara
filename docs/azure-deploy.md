@@ -19,6 +19,7 @@ Two App Services, both Linux, plan B1 or higher:
    - `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` (OpenAI-compatible chat gateway)
    - `TMAPS_API_KEY` (places search)
    - `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `ADZUNA_COUNTRY` (job offers)
+   - `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` (see `docs/whatsapp.md`)
 3. **Startup command** (Settings > Configuration > General settings):
    `uvicorn app.main:app --host 0.0.0.0 --port 8000`
    and set **Startup timeout** (`WEBSITES_CONTAINER_START_TIME_LIMIT`) to `600`: the first start downloads the

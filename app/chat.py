@@ -41,6 +41,15 @@ _AGENTS = {
 }
 
 
+async def ask_agent(agent_id: str, message: str, session_id: str, user_id: str) -> str:
+    """Runs one domain agent in its stored session and returns its markdown answer."""
+    agent = _AGENTS.get(agent_id)
+    if agent is None:
+        raise KeyError(agent_id)
+    run = await agent.arun(message, session_id=session_id, user_id=user_id)
+    return run.content if isinstance(run.content, str) else str(run.content or "")
+
+
 @router.post("/{agent_id}/run")
 async def run_agent(
     agent_id: str,
@@ -48,8 +57,8 @@ async def run_agent(
     session_id: Annotated[str, Form()],
     user_id: Annotated[str, Form()],
 ) -> dict:
-    agent = _AGENTS.get(agent_id)
-    if agent is None:
-        raise HTTPException(status_code=404, detail=f"Unknown agent: {agent_id}")
-    run = await agent.arun(message, session_id=session_id, user_id=user_id)
-    return {"agent_id": agent_id, "content": run.content if isinstance(run.content, str) else str(run.content or "")}
+    try:
+        content = await ask_agent(agent_id, message, session_id, user_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Unknown agent: {agent_id}") from None
+    return {"agent_id": agent_id, "content": content}
