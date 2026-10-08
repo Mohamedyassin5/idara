@@ -260,7 +260,7 @@ def _valid_signature(raw: bytes, header: str | None) -> bool:
 
 
 @router.get("/diagnostics")
-async def diagnostics(token: str = "") -> dict:
+async def diagnostics(token: str = "", waba: str = "", subscribe: bool = False) -> dict:
     """Recent bot activity and whether Meta accepts the access token. Protected by the verify token."""
     expected = getenv("WHATSAPP_VERIFY_TOKEN")
     if not expected or not hmac.compare_digest(token, expected):
@@ -275,6 +275,19 @@ async def diagnostics(token: str = "") -> dict:
             meta["graph"] = response.json() if response.status_code == 200 else response.json().get("error", {}).get("message", "")[:200]
         except httpx.HTTPError as exc:
             meta["graph_status"] = f"unreachable: {type(exc).__name__}"
+    if access and re.fullmatch(r"\d{5,25}", waba):
+        # Meta only delivers webhooks for a WhatsApp Business account the app is subscribed to.
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                headers = {"Authorization": f"Bearer {access}"}
+                if subscribe:
+                    done = await client.post(f"{GRAPH_URL}/{waba}/subscribed_apps", headers=headers)
+                    meta["subscribe_status"] = done.status_code
+                    meta["subscribe_result"] = done.json()
+                listed = await client.get(f"{GRAPH_URL}/{waba}/subscribed_apps", headers=headers)
+            meta["subscribed_apps"] = listed.json().get("data", listed.json().get("error", {}).get("message", ""))
+        except httpx.HTTPError as exc:
+            meta["subscribed_apps"] = f"unreachable: {type(exc).__name__}"
     return {"meta": meta, "events": list(_events)}
 
 
