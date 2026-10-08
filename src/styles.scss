@@ -1524,6 +1524,13 @@ select option {
   font-size: 1.05rem;
 }
 
+.landing-whatsapp {
+  max-width: 760px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2rem);
+  padding-block-end: clamp(2rem, 5vw, 3rem);
+}
+
 .landing-features,
 .landing-closing {
   max-width: 1080px;

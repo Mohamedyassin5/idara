@@ -1,9 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { I18n, UiKey } from '../core/i18n';
+import { WhatsappCard } from '../shared/whatsapp-card';
 
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, WhatsappCard],
   template: `
     <section class="landing-hero">
       <p class="landing-eyebrow">✦ {{ i18n.t('appName') }} ✦</p>
@@ -13,6 +14,10 @@ import { I18n, UiKey } from '../core/i18n';
         <a class="btn primary big" routerLink="/home">{{ i18n.t('landingStart') }}</a>
         <a class="btn ghost big" routerLink="/assistant">{{ i18n.t('landingAsk') }}</a>
       </div>
+    </section>
+
+    <section class="landing-whatsapp">
+      <app-whatsapp-card />
     </section>
 
     <section class="landing-features">
