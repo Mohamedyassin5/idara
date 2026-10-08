@@ -18,6 +18,8 @@ import hashlib
 import hmac
 import json
 import re
+import time
+from collections import deque
 from os import getenv
 
 import httpx
@@ -85,6 +87,11 @@ _state: dict[str, dict] = {}
 _busy: set[str] = set()
 _seen: dict[str, None] = {}  # message ids already handled (Meta retries deliveries), insertion-ordered
 _tasks: set[asyncio.Task] = set()
+_events: deque[dict] = deque(maxlen=20)  # recent activity for /whatsapp/diagnostics (no message content)
+
+
+def _log(kind: str, phone: str = "", detail: str = "") -> None:
+    _events.append({"at": time.strftime("%H:%M:%S", time.gmtime()), "kind": kind, "phone": f"...{phone[-4:]}" if phone else "", "detail": detail})
 
 
 # ---------------------------------------------------------------------------
@@ -202,6 +209,7 @@ async def send_text(to: str, body: str) -> None:
     token, phone_id = getenv("WHATSAPP_ACCESS_TOKEN"), getenv("WHATSAPP_PHONE_NUMBER_ID")
     if not token or not phone_id:
         print("whatsapp: WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID missing, reply not sent", flush=True)
+        _log("send_skipped", to, "access token or phone number id missing")
         return
     async with httpx.AsyncClient(timeout=20) as client:
         response = await client.post(
@@ -211,6 +219,9 @@ async def send_text(to: str, body: str) -> None:
         )
     if response.status_code >= 400:
         print(f"whatsapp: send failed {response.status_code} {response.text[:200]}", flush=True)
+        _log("send_failed", to, f"{response.status_code} {response.text[:160]}")
+    else:
+        _log("sent", to, str(response.status_code))
 
 
 async def _process(phone: str, text: str) -> None:
@@ -223,6 +234,7 @@ async def _process(phone: str, text: str) -> None:
             await send_text(phone, chunk)
     except Exception as exc:  # the user must always get an answer, whatever failed
         print(f"whatsapp: processing failed: {type(exc).__name__}: {exc}", flush=True)
+        _log("agent_failed", phone, f"{type(exc).__name__}: {str(exc)[:160]}")
         await send_text(phone, "Désolé, une erreur est survenue. Réessayez dans un instant.")
     finally:
         _busy.discard(phone)
@@ -245,6 +257,25 @@ def _valid_signature(raw: bytes, header: str | None) -> bool:
         return False
     expected = hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, header.removeprefix("sha256="))
+
+
+@router.get("/diagnostics")
+async def diagnostics(token: str = "") -> dict:
+    """Recent bot activity and whether Meta accepts the access token. Protected by the verify token."""
+    expected = getenv("WHATSAPP_VERIFY_TOKEN")
+    if not expected or not hmac.compare_digest(token, expected):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    access, phone_id = getenv("WHATSAPP_ACCESS_TOKEN"), getenv("WHATSAPP_PHONE_NUMBER_ID")
+    meta: dict = {"configured": bool(access and phone_id), "app_secret_set": bool(getenv("WHATSAPP_APP_SECRET"))}
+    if access and phone_id:
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                response = await client.get(f"{GRAPH_URL}/{phone_id}", params={"fields": "display_phone_number,verified_name"}, headers={"Authorization": f"Bearer {access}"})
+            meta["graph_status"] = response.status_code
+            meta["graph"] = response.json() if response.status_code == 200 else response.json().get("error", {}).get("message", "")[:200]
+        except httpx.HTTPError as exc:
+            meta["graph_status"] = f"unreachable: {type(exc).__name__}"
+    return {"meta": meta, "events": list(_events)}
 
 
 @router.get("/info")
@@ -277,6 +308,7 @@ async def receive(request: Request) -> dict:
                 if not phone or message_id in _seen:
                     continue
                 _seen[message_id] = None
+                _log("received", phone, f"type={message.get('type')}")
                 while len(_seen) > 1000:
                     _seen.pop(next(iter(_seen)))
                 text = _incoming_text(message)
