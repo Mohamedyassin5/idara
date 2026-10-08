@@ -310,8 +310,11 @@ async def verify(request: Request) -> Response:
 async def receive(request: Request) -> dict:
     raw = await request.body()
     if not getenv("WHATSAPP_APP_SECRET"):
+        _log("rejected", "", "WHATSAPP_APP_SECRET is not set")
         raise HTTPException(status_code=503, detail="WhatsApp is not configured")
     if not _valid_signature(raw, request.headers.get("x-hub-signature-256")):
+        has_header = bool(request.headers.get("x-hub-signature-256"))
+        _log("rejected", "", "invalid signature: WHATSAPP_APP_SECRET does not match the app" if has_header else "missing signature")
         raise HTTPException(status_code=403, detail="Invalid signature")
 
     for entry in json.loads(raw).get("entry", []):
