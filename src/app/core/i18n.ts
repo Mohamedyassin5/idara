@@ -69,6 +69,13 @@ export const UI = {
     en: 'Ask a question above: the result will appear here, on the map.',
   },
   youAsked: { fr: 'Votre question', ar: 'سؤالك', en: 'Your question' },
+  waTitle: { fr: 'Continuer sur WhatsApp', ar: 'كمّل على واتساب', en: 'Continue on WhatsApp' },
+  waSub: {
+    fr: 'Scannez le code avec votre téléphone, appuyez sur Envoyer, puis posez vos questions à cet agent.',
+    ar: 'امسح الرمز بتليفونك، اضغط إرسال، وبعد اسأل هالوكيل.',
+    en: 'Scan the code with your phone, press Send, then ask this agent your questions.',
+  },
+  waOpen: { fr: 'Ouvrir WhatsApp', ar: 'افتح واتساب', en: 'Open WhatsApp' },
   convTitle: { fr: 'Conversations', ar: 'المحادثات', en: 'Conversations' },
   convNew: { fr: 'Nouvelle conversation', ar: 'محادثة جديدة', en: 'New conversation' },
   convPinned: { fr: 'Épinglées', ar: 'مثبّتة', en: 'Pinned' },

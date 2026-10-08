@@ -9,6 +9,7 @@ import { AnswerCards } from '../shared/answer-cards';
 import { ConversationList } from '../shared/conversation-list';
 import { CvWorkspace } from '../shared/cv-workspace';
 import { GeoResult } from '../shared/geo-result';
+import { WhatsappCard } from '../shared/whatsapp-card';
 
 const TUNIS_CENTRE = { lat: '36.8002', lng: '10.1815' };
 
@@ -46,7 +47,7 @@ const ASSISTANT: AgentConfig = {
 };
 
 @Component({
-  imports: [FormsModule, RouterLink, Icon, GeoResult, AnswerCards, CvWorkspace, ConversationList],
+  imports: [FormsModule, RouterLink, Icon, GeoResult, AnswerCards, CvWorkspace, ConversationList, WhatsappCard],
   template: `
     @if (agent(); as a) {
       <div class="agent-page" [style.--accent]="a.accent">
@@ -73,6 +74,8 @@ const ASSISTANT: AgentConfig = {
         </section>
 
         <div class="container narrow workspace-body">
+          <app-whatsapp-card [agentId]="a.backendId" />
+
           @if (isJob()) {
             <section class="block">
               <h2 class="block-title">{{ i18n.t('cvTitle') }}</h2>
