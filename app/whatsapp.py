@@ -87,6 +87,7 @@ _state: dict[str, dict] = {}
 _busy: set[str] = set()
 _seen: dict[str, None] = {}  # message ids already handled (Meta retries deliveries), insertion-ordered
 _tasks: set[asyncio.Task] = set()
+_STARTED_AT = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
 _events: deque[dict] = deque(maxlen=20)  # recent activity for /whatsapp/diagnostics (no message content)
 
 
@@ -266,7 +267,15 @@ async def diagnostics(request: Request, token: str = "", waba: str = "", subscri
     if not expected or not hmac.compare_digest(token, expected):
         raise HTTPException(status_code=403, detail="Forbidden")
     access, phone_id = getenv("WHATSAPP_ACCESS_TOKEN"), getenv("WHATSAPP_PHONE_NUMBER_ID")
-    meta: dict = {"configured": bool(access and phone_id), "app_secret_set": bool(getenv("WHATSAPP_APP_SECRET"))}
+    secret_value = getenv("WHATSAPP_APP_SECRET", "")
+    meta: dict = {
+        "configured": bool(access and phone_id),
+        "app_secret_set": bool(secret_value),
+        # Shape only, never the value: a Meta app secret is 32 hexadecimal characters.
+        "app_secret_shape": f"{len(secret_value)} chars, {'hex' if re.fullmatch(r'[0-9a-fA-F]+', secret_value) else 'not hex'}"
+        + (", has surrounding whitespace" if secret_value != secret_value.strip() else ""),
+        "backend_started_at": _STARTED_AT,
+    }
     if access and phone_id:
         try:
             async with httpx.AsyncClient(timeout=15) as client:
