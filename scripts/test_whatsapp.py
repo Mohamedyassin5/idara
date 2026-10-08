@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-os.environ.update(WHATSAPP_APP_SECRET="s3cret", WHATSAPP_VERIFY_TOKEN="verify-me")
+os.environ.update(WHATSAPP_APP_SECRET="s3cret", WHATSAPP_VERIFY_TOKEN="verify-me", WHATSAPP_WEBHOOK_SECRET="u" * 30)
 
 from fastapi import FastAPI  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -151,6 +151,24 @@ asyncio.run(webhook_flow())
 check("duplicate delivery handled once", len(sent) == 3, f"{len(sent)} replies for 3 distinct messages")
 check("location without an agent gets the menu", [b for _, b in sent].count(wa.MENU) == 2)
 check("unsupported type gets a notice", any("texte" in b for _, b in sent))
+
+# --- secret-in-URL variant ---------------------------------------------------------------------------------
+check("url secret: wrong secret rejected", client.post("/whatsapp/webhook/wrong", json={}).status_code == 403)
+check("url secret: short secret never accepted", client.post("/whatsapp/webhook/short", json={}).status_code == 403)
+ok_url = "/whatsapp/webhook/" + "u" * 30
+check("url secret: handshake", client.get(ok_url, params={"hub.mode": "subscribe", "hub.verify_token": "verify-me", "hub.challenge": "7"}).text == "7")
+check("url secret: handshake needs the verify token too", client.get(ok_url, params={"hub.mode": "subscribe", "hub.verify_token": "bad", "hub.challenge": "7"}).status_code == 403)
+
+
+async def url_flow() -> None:
+    sent.clear()
+    with TestClient(api) as c:
+        r = c.post(ok_url, json=message("u1", type="text", text={"body": "/menu"}))
+        await asyncio.sleep(0.3)
+        check("url secret: accepted and answered", r.status_code == 200 and any(b == wa.MENU for _, b in sent))
+
+
+asyncio.run(url_flow())
 
 print("\nALL PASSED" if not failures else f"\n{len(failures)} FAILED: {failures}")
 sys.exit(1 if failures else 0)

@@ -31,6 +31,12 @@ map results arrive as Google Maps links.
    verify token from step 4 > **Verify and save**, then subscribe to the **messages** field.
 7. API Setup > add your own phone as a recipient, send a message to the test number: `/menu`.
 
+## Alternative: secret in the callback URL
+
+If Meta's app secret is not available, set `WHATSAPP_WEBHOOK_SECRET` (a random string of at least 24 characters,
+letters and digits) and use `https://<backend>.azurewebsites.net/whatsapp/webhook/<that string>` as the callback URL.
+The verify token still has to match. The secret in the URL is what authenticates deliveries, so keep it private.
+
 ## Limits to know
 
 - With Meta's **test number**, only up to 5 recipients you add by hand can message the bot. To let *any* user

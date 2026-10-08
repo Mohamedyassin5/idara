@@ -334,17 +334,8 @@ async def verify(request: Request) -> Response:
     raise HTTPException(status_code=403, detail="Verification failed")
 
 
-@router.post("/webhook")
-async def receive(request: Request) -> dict:
-    raw = await request.body()
-    if not getenv("WHATSAPP_APP_SECRET"):
-        _log("rejected", "", "WHATSAPP_APP_SECRET is not set")
-        raise HTTPException(status_code=503, detail="WhatsApp is not configured")
-    if not _valid_signature(raw, request.headers.get("x-hub-signature-256")):
-        has_header = bool(request.headers.get("x-hub-signature-256"))
-        _log("rejected", "", "invalid signature: WHATSAPP_APP_SECRET does not match the app" if has_header else "missing signature")
-        raise HTTPException(status_code=403, detail="Invalid signature")
-
+def _handle_payload(raw: bytes) -> None:
+    """Starts the background reply for each new message in a webhook payload."""
     for entry in json.loads(raw).get("entry", []):
         for change in entry.get("changes", []):
             for message in (change.get("value") or {}).get("messages", []):
@@ -362,4 +353,42 @@ async def receive(request: Request) -> dict:
                     task = asyncio.create_task(_process(phone, text))
                 _tasks.add(task)
                 task.add_done_callback(_tasks.discard)
+
+
+def _valid_url_secret(secret: str) -> bool:
+    expected = getenv("WHATSAPP_WEBHOOK_SECRET", "")
+    return len(expected) >= 24 and hmac.compare_digest(secret, expected)
+
+
+@router.post("/webhook")
+async def receive(request: Request) -> dict:
+    """Standard Meta delivery, authenticated by the HMAC signature (WHATSAPP_APP_SECRET)."""
+    raw = await request.body()
+    if not getenv("WHATSAPP_APP_SECRET"):
+        _log("rejected", "", "WHATSAPP_APP_SECRET is not set")
+        raise HTTPException(status_code=503, detail="WhatsApp is not configured")
+    if not _valid_signature(raw, request.headers.get("x-hub-signature-256")):
+        has_header = bool(request.headers.get("x-hub-signature-256"))
+        _log("rejected", "", "invalid signature: WHATSAPP_APP_SECRET does not match the app" if has_header else "missing signature")
+        raise HTTPException(status_code=403, detail="Invalid signature")
+    _handle_payload(raw)
+    return {"status": "ok"}
+
+
+@router.get("/webhook/{secret}")
+async def verify_with_secret(secret: str, request: Request) -> Response:
+    """Meta's handshake on the secret-path callback URL (the verify token must match too)."""
+    if not _valid_url_secret(secret):
+        raise HTTPException(status_code=403, detail="Verification failed")
+    return await verify(request)
+
+
+@router.post("/webhook/{secret}")
+async def receive_with_secret(secret: str, request: Request) -> dict:
+    """Delivery authenticated by a long random secret in the URL, for when Meta's app secret is not available."""
+    raw = await request.body()
+    if not _valid_url_secret(secret):
+        _log("rejected", "", "wrong or unset WHATSAPP_WEBHOOK_SECRET in the callback URL")
+        raise HTTPException(status_code=403, detail="Forbidden")
+    _handle_payload(raw)
     return {"status": "ok"}
